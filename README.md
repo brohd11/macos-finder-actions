@@ -152,6 +152,42 @@ The repository includes XCTest coverage for parsing, matching, nested ordering, 
 pruning. The SwiftPM self-test covers the same critical path for environments whose Command
 Line Tools do not ship XCTest.
 
+### Experimental ad-hoc CI build
+
+The **Build Ad-Hoc Smoke Artifact** workflow can be started manually from the repository's
+Actions tab. It runs the tests on a clean GitHub-hosted Mac, builds a universal Release app,
+and uploads `Finder-Actions-Ad-Hoc.zip` with a SHA-256 file for seven days.
+
+This artifact is an experiment, not a normal macOS release. It has an ad-hoc signature with
+no Apple team identity or provisioning profile. Gatekeeper is expected to reject it, and
+Apple's `group.` app-group containers normally require a matching provisioning profile. The
+dashboard, runner, or Finder extension may therefore be unable to access their shared
+container even though `codesign --verify` succeeds.
+
+The smoke build uses separate `com.brohd.adhoc` bundle identifiers, the app-group identifier
+`group.com.brohd.adhoc.FinderActions`, and the display name **Finder Actions Ad Hoc**. It can
+be tested without replacing the development-signed app or its app-group data.
+
+To test an artifact:
+
+1. Download and expand the Actions artifact, then verify it from that directory with
+   `shasum -a 256 -c Finder-Actions-Ad-Hoc.zip.sha256`.
+2. Expand the inner ZIP and move **Finder Actions Ad Hoc.app** to `/Applications`.
+3. Try opening it normally first and record Gatekeeper's response. For an artifact you built
+   from your own commit, either use **Open Anyway** in Privacy & Security or explicitly remove
+   quarantine with `xattr -dr com.apple.quarantine "/Applications/Finder Actions Ad Hoc.app"`.
+4. Temporarily disable the development build's Finder extension so duplicate menu items do
+   not obscure the result. Enable the ad-hoc extension and runner, then check whether the
+   dashboard loads actions and a Finder action executes and produces a run log.
+5. If a boundary fails, inspect Console messages for `com.brohd.adhoc` and record whether the
+   failure occurred at extension discovery, runner startup, shared-container access, XPC, or
+   shell execution.
+
+After testing, disable the ad-hoc runner from its dashboard, disable its Finder extension,
+quit and remove the ad-hoc app, and re-enable the development build's Finder extension. A
+successful test on one Mac is not evidence for general distribution; repeat it on a clean
+Mac with no Xcode or developer credentials, including across a reboot, before relying on it.
+
 ## Platform caveats
 
 Finder Sync was designed by Apple primarily for file synchronization clients. This project
