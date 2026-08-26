@@ -1,0 +1,295 @@
+name: Build Ad-Hoc Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to embed in the manual build (MAJOR.MINOR.PATCH)
+        required: true
+        default: "1.0.0"
+        type: string
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  BUNDLE_ID_PREFIX: com.brohd
+  APP_GROUP_IDENTIFIER: group.com.brohd.FinderActions
+
+jobs:
+  build:
+    name: Test and package
+    runs-on: macos-15
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Determine and validate version
+        id: version
+        env:
+          MANUAL_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          semantic_version_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+              echo "Release tags must use vMAJOR.MINOR.PATCH without leading zeroes." >&2
+              exit 1
+            fi
+            version="${GITHUB_REF_NAME#v}"
+            release_commit="$(git rev-parse "${GITHUB_REF_NAME}^{commit}")"
+            git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+            if ! git merge-base --is-ancestor "$release_commit" refs/remotes/origin/main; then
+              echo "Release tag $GITHUB_REF_NAME does not point to a commit on main." >&2
+              exit 1
+            fi
+          else
+            version="$MANUAL_VERSION"
+            if [[ ! "$version" =~ $semantic_version_pattern ]]; then
+              echo "Manual versions must use MAJOR.MINOR.PATCH without leading zeroes." >&2
+              exit 1
+            fi
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+          echo "Building Finder Actions $version ($GITHUB_RUN_NUMBER)"
+
+      - name: Show build environment
+        run: |
+          set -euo pipefail
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Run tests
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project FinderActions.xcodeproj \
+            -scheme FinderActions \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/TestDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM= \
+            "BUNDLE_ID_PREFIX=$BUNDLE_ID_PREFIX" \
+            "APP_GROUP_IDENTIFIER=$APP_GROUP_IDENTIFIER" \
+            ONLY_ACTIVE_ARCH=YES \
+            ARCHS=arm64 \
+            test
+
+      - name: Build unsigned universal app
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project FinderActions.xcodeproj \
+            -scheme FinderActions \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM= \
+            "BUNDLE_ID_PREFIX=$BUNDLE_ID_PREFIX" \
+            "APP_GROUP_IDENTIFIER=$APP_GROUP_IDENTIFIER" \
+            ONLY_ACTIVE_ARCH=NO \
+            'ARCHS=arm64 x86_64' \
+            build
+
+      - name: Stage and version app
+        run: |
+          set -euo pipefail
+          source_app="$RUNNER_TEMP/DerivedData/Build/Products/Release/Finder Actions.app"
+          stage="$RUNNER_TEMP/Package"
+          app="$stage/Finder Actions.app"
+
+          mkdir -p "$stage"
+          ditto "$source_app" "$app"
+
+          plists=(
+            "$app/Contents/Info.plist"
+            "$app/Contents/PlugIns/FinderActionsFinderSync.appex/Contents/Info.plist"
+            "$app/Contents/Library/LoginItems/FinderActionsRunner.app/Contents/Info.plist"
+          )
+          for plist in "${plists[@]}"; do
+            /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $RELEASE_VERSION" "$plist"
+            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$plist"
+            plutil -lint "$plist"
+          done
+
+      - name: Apply ad-hoc signatures
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/Package/Finder Actions.app"
+          extension="$app/Contents/PlugIns/FinderActionsFinderSync.appex"
+          runner="$app/Contents/Library/LoginItems/FinderActionsRunner.app"
+          entitlements="$RUNNER_TEMP/Entitlements"
+
+          mkdir -p "$entitlements"
+          cp Resources/Entitlements/App.entitlements "$entitlements/App.entitlements"
+          cp Resources/Entitlements/FinderSync.entitlements "$entitlements/FinderSync.entitlements"
+          cp Resources/Entitlements/Runner.entitlements "$entitlements/Runner.entitlements"
+
+          for file in "$entitlements/App.entitlements" "$entitlements/FinderSync.entitlements" "$entitlements/Runner.entitlements"; do
+            /usr/libexec/PlistBuddy \
+              -c "Set :com.apple.security.application-groups:0 $APP_GROUP_IDENTIFIER" \
+              "$file"
+            plutil -lint "$file"
+          done
+
+          codesign --force --sign - --timestamp=none --options runtime \
+            --entitlements "$entitlements/Runner.entitlements" "$runner"
+          codesign --force --sign - --timestamp=none --options runtime \
+            --entitlements "$entitlements/FinderSync.entitlements" "$extension"
+          codesign --force --sign - --timestamp=none --options runtime \
+            --entitlements "$entitlements/App.entitlements" "$app"
+
+      - name: Verify package
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/Package/Finder Actions.app"
+          extension="$app/Contents/PlugIns/FinderActionsFinderSync.appex"
+          runner="$app/Contents/Library/LoginItems/FinderActionsRunner.app"
+
+          require_universal() {
+            local binary="$1"
+            local architectures
+            architectures="$(lipo -archs "$binary")"
+            echo "$binary: $architectures"
+            [[ " $architectures " == *' arm64 '* ]]
+            [[ " $architectures " == *' x86_64 '* ]]
+          }
+
+          assert_plist_value() {
+            local plist="$1"
+            local key="$2"
+            local expected="$3"
+            local actual
+            actual="$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist")"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "$plist: expected $key=$expected, found $actual" >&2
+              exit 1
+            fi
+          }
+
+          require_universal "$app/Contents/MacOS/Finder Actions"
+          require_universal "$extension/Contents/MacOS/FinderActionsFinderSync"
+          require_universal "$runner/Contents/MacOS/FinderActionsRunner"
+
+          assert_plist_value "$app/Contents/Info.plist" CFBundleIdentifier com.brohd.FinderActions
+          assert_plist_value "$extension/Contents/Info.plist" CFBundleIdentifier com.brohd.FinderActions.FinderSync
+          assert_plist_value "$runner/Contents/Info.plist" CFBundleIdentifier com.brohd.FinderActions.Runner
+          assert_plist_value "$app/Contents/Info.plist" AppGroupIdentifier group.com.brohd.FinderActions
+          assert_plist_value "$app/Contents/Info.plist" MachServiceName group.com.brohd.FinderActions.runner
+
+          for plist in "$app/Contents/Info.plist" "$extension/Contents/Info.plist" "$runner/Contents/Info.plist"; do
+            assert_plist_value "$plist" CFBundleShortVersionString "$RELEASE_VERSION"
+            assert_plist_value "$plist" CFBundleVersion "$BUILD_NUMBER"
+          done
+
+          codesign --verify --strict --verbose=2 "$runner"
+          codesign --verify --strict --verbose=2 "$extension"
+          codesign --verify --deep --strict --verbose=2 "$app"
+
+          signature_info="$(codesign -d --verbose=4 "$app" 2>&1)"
+          echo "$signature_info"
+          grep -q '^Signature=adhoc$' <<< "$signature_info"
+          grep -q '^TeamIdentifier=not set$' <<< "$signature_info"
+
+          if find "$app" -name embedded.provisionprofile -print | grep -q .; then
+            echo 'An ad-hoc release must not contain a provisioning profile.' >&2
+            exit 1
+          fi
+
+          echo 'Outer app entitlements:'
+          codesign -d --entitlements :- "$app" 2>&1
+          echo 'Finder extension entitlements:'
+          codesign -d --entitlements :- "$extension" 2>&1
+
+          echo 'Gatekeeper assessment (rejection is expected for an ad-hoc signature):'
+          set +e
+          spctl --assess --type execute --verbose=4 "$app"
+          gatekeeper_status=$?
+          set -e
+          echo "spctl exit status: $gatekeeper_status"
+
+      - name: Create ZIP and checksum
+        run: |
+          set -euo pipefail
+          artifact_dir="$RUNNER_TEMP/Artifacts"
+          app="$RUNNER_TEMP/Package/Finder Actions.app"
+          archive="$artifact_dir/Finder-Actions.zip"
+
+          mkdir -p "$artifact_dir"
+          ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
+          (
+            cd "$artifact_dir"
+            shasum -a 256 Finder-Actions.zip > Finder-Actions.zip.sha256
+            shasum -a 256 -c Finder-Actions.zip.sha256
+          )
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: finder-actions-release
+          path: |
+            ${{ runner.temp }}/Artifacts/Finder-Actions.zip
+            ${{ runner.temp }}/Artifacts/Finder-Actions.zip.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download verified build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: finder-actions-release
+          path: release-assets
+
+      - name: Verify release checksum
+        run: |
+          set -euo pipefail
+          cd release-assets
+          sha256sum -c Finder-Actions.zip.sha256
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          release_note='This build is ad-hoc signed and is not notarized. On first launch, approve it under System Settings > Privacy & Security, then enable the background runner and Finder extension. Protected locations may require Full Disk Access for the embedded Finder extension, and macOS may request privacy permissions again after an update.'
+          gh release create "$GITHUB_REF_NAME" \
+            'release-assets/Finder-Actions.zip#Finder Actions for macOS (universal, ad-hoc signed)' \
+            'release-assets/Finder-Actions.zip.sha256#SHA-256 checksum' \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --generate-notes \
+            --latest \
+            --title "Finder Actions v$RELEASE_VERSION" \
+            --notes "$release_note"
