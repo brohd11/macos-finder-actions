@@ -15,7 +15,29 @@ Finder controls where an extension's contributed block appears relative to its o
 commands. Finder Actions controls ordering, separators, and grouping inside that block,
 but cannot insert an item between arbitrary Apple-provided commands.
 
-## Requirements and first build
+## Install the latest release
+
+On macOS 13 or newer, download, verify, and install the latest stable release with:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/brohd11/macos-finder-actions/main/install.sh | sh
+```
+
+The installer puts **Finder Actions.app** in `/Applications` and replaces an existing copy
+after the new download passes checksum and bundle validation. To choose another application
+directory, set an absolute path with `FINDER_ACTIONS_INSTALL_DIR`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/brohd11/macos-finder-actions/main/install.sh | \
+  FINDER_ACTIONS_INSTALL_DIR="$HOME/Applications" sh
+```
+
+The release is ad-hoc signed and is not notarized. The installer does not change macOS
+quarantine settings; if the first launch is blocked, use **Open Anyway** under Privacy &
+Security. Then enable the background runner in the dashboard and Finder Actions under
+**Login Items & Extensions → Finder Extensions**.
+
+## Build from source
 
 - macOS 13 or newer
 - Full Xcode (Command Line Tools alone cannot package a Finder extension)
