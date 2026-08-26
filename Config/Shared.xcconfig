@@ -1,0 +1,14 @@
+MACOSX_DEPLOYMENT_TARGET = 13.0
+SWIFT_VERSION = 6.0
+SWIFT_STRICT_CONCURRENCY = complete
+CODE_SIGN_STYLE = Automatic
+ENABLE_HARDENED_RUNTIME = YES
+REGISTER_APP_GROUPS = YES
+ENABLE_USER_SCRIPT_SANDBOXING = NO
+
+// Override these in the ignored Local.xcconfig before running the app.
+DEVELOPMENT_TEAM =
+BUNDLE_ID_PREFIX = com.example
+APP_GROUP_IDENTIFIER = group.$(BUNDLE_ID_PREFIX).FinderActions
+
+#include? "Local.xcconfig"

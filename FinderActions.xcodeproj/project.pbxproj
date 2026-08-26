@@ -1,0 +1,183 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BC0000000000000000000001 /* ActionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000001; };
+		BC0000000000000000000002 /* ActionConfigParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000002; };
+		BC0000000000000000000003 /* ActionCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000003; };
+		BC0000000000000000000004 /* ActionMatching.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000004; };
+		BC0000000000000000000005 /* RunnerXPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000005; };
+		BC0000000000000000000006 /* RunLogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000006; };
+		BA0000000000000000000001 /* FinderActionsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000001; };
+		BA0000000000000000000002 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000002; };
+		BA0000000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000003; };
+		BA0000000000000000000004 /* libFinderActionsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000001; };
+		BA0000000000000000000005 /* FinderSync.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000001; };
+		BA0000000000000000000006 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000002; };
+		BA0000000000000000000007 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000003; };
+		BE0000000000000000000001 /* FinderSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000001; };
+		BE0000000000000000000004 /* MenuActionPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000002; };
+		BE0000000000000000000002 /* libFinderActionsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000001; };
+		BE0000000000000000000003 /* FinderSync.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000001; };
+		BR0000000000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = R00000000000000000000001; };
+		BR0000000000000000000002 /* CatalogCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = R00000000000000000000002; };
+		BR0000000000000000000003 /* ScriptExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = R00000000000000000000003; };
+		BR0000000000000000000004 /* RunnerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = R00000000000000000000004; };
+		BR0000000000000000000005 /* libFinderActionsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000001; };
+		BR0000000000000000000006 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000003; };
+		BT0000000000000000000001 /* ActionConfigParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000001; };
+		BT0000000000000000000002 /* ActionMatchingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000002; };
+		BT0000000000000000000003 /* RunLogStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000003; };
+		BT0000000000000000000004 /* libFinderActionsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000001; };
+		BT0000000000000000000005 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000004; };
+		BT0000000000000000000006 /* MenuActionPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000002; };
+		CP0000000000000000000001 /* FinderActionsFinderSync.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000003; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
+		CP0000000000000000000002 /* FinderActionsRunner.app in Embed Login Items */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000004; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		PX0000000000000000000001 = {isa = PBXContainerItemProxy; containerPortal = PROJECT00000000000000001; proxyType = 1; remoteGlobalIDString = NT0000000000000000000001; remoteInfo = FinderActionsCore; };
+		PX0000000000000000000002 = {isa = PBXContainerItemProxy; containerPortal = PROJECT00000000000000001; proxyType = 1; remoteGlobalIDString = NT0000000000000000000003; remoteInfo = FinderActionsFinderSync; };
+		PX0000000000000000000003 = {isa = PBXContainerItemProxy; containerPortal = PROJECT00000000000000001; proxyType = 1; remoteGlobalIDString = NT0000000000000000000004; remoteInfo = FinderActionsRunner; };
+		PX0000000000000000000004 = {isa = PBXContainerItemProxy; containerPortal = PROJECT00000000000000001; proxyType = 1; remoteGlobalIDString = NT0000000000000000000001; remoteInfo = FinderActionsCore; };
+		PX0000000000000000000005 = {isa = PBXContainerItemProxy; containerPortal = PROJECT00000000000000001; proxyType = 1; remoteGlobalIDString = NT0000000000000000000001; remoteInfo = FinderActionsCore; };
+		PX0000000000000000000006 = {isa = PBXContainerItemProxy; containerPortal = PROJECT00000000000000001; proxyType = 1; remoteGlobalIDString = NT0000000000000000000001; remoteInfo = FinderActionsCore; };
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		COPY000000000000000000001 /* Embed App Extensions */ = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (CP0000000000000000000001, ); name = "Embed App Extensions"; runOnlyForDeploymentPostprocessing = 0; };
+		COPY000000000000000000002 /* Embed Login Items */ = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = Contents/Library/LoginItems; dstSubfolderSpec = 1; files = (CP0000000000000000000002, ); name = "Embed Login Items"; runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		C00000000000000000000001 /* ActionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionModels.swift; sourceTree = "<group>"; };
+		C00000000000000000000002 /* ActionConfigParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionConfigParser.swift; sourceTree = "<group>"; };
+		C00000000000000000000003 /* ActionCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionCatalog.swift; sourceTree = "<group>"; };
+		C00000000000000000000004 /* ActionMatching.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionMatching.swift; sourceTree = "<group>"; };
+		C00000000000000000000005 /* RunnerXPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerXPC.swift; sourceTree = "<group>"; };
+		C00000000000000000000006 /* RunLogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunLogs.swift; sourceTree = "<group>"; };
+		A00000000000000000000001 /* FinderActionsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderActionsApp.swift; sourceTree = "<group>"; };
+		A00000000000000000000002 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		A00000000000000000000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		E00000000000000000000001 /* FinderSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderSync.swift; sourceTree = "<group>"; };
+		E00000000000000000000002 /* MenuActionPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuActionPayload.swift; sourceTree = "<group>"; };
+		R00000000000000000000001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		R00000000000000000000002 /* CatalogCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogCoordinator.swift; sourceTree = "<group>"; };
+		R00000000000000000000003 /* ScriptExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptExecutor.swift; sourceTree = "<group>"; };
+		R00000000000000000000004 /* RunnerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerService.swift; sourceTree = "<group>"; };
+		T00000000000000000000001 /* ActionConfigParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionConfigParserTests.swift; sourceTree = "<group>"; };
+		T00000000000000000000002 /* ActionMatchingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionMatchingTests.swift; sourceTree = "<group>"; };
+		T00000000000000000000003 /* RunLogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunLogStoreTests.swift; sourceTree = "<group>"; };
+		Q00000000000000000000001 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
+		Q00000000000000000000002 /* Local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig.example; sourceTree = "<group>"; };
+		P00000000000000000000001 /* App Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "App Info.plist"; path = App/Info.plist; sourceTree = "<group>"; };
+		P00000000000000000000002 /* FinderSync Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "FinderSync Info.plist"; path = FinderSync/Info.plist; sourceTree = "<group>"; };
+		P00000000000000000000003 /* Runner Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Runner Info.plist"; path = Runner/Info.plist; sourceTree = "<group>"; };
+		P00000000000000000000004 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
+		P00000000000000000000005 /* FinderSync.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FinderSync.entitlements; sourceTree = "<group>"; };
+		P00000000000000000000006 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		P00000000000000000000007 /* com.finderactions.runner.plist.template */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = com.finderactions.runner.plist.template; sourceTree = "<group>"; };
+		F00000000000000000000001 /* FinderSync.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FinderSync.framework; path = System/Library/Frameworks/FinderSync.framework; sourceTree = SDKROOT; };
+		F00000000000000000000002 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
+		F00000000000000000000003 /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
+		F00000000000000000000004 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		PR0000000000000000000001 /* libFinderActionsCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libFinderActionsCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		PR0000000000000000000002 /* Finder Actions.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Finder Actions.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		PR0000000000000000000003 /* FinderActionsFinderSync.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FinderActionsFinderSync.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		PR0000000000000000000004 /* FinderActionsRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FinderActionsRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		PR0000000000000000000005 /* FinderActionsCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FinderActionsCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		PF0000000000000000000001 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		PF0000000000000000000002 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (BA0000000000000000000004, BA0000000000000000000005, BA0000000000000000000006, BA0000000000000000000007, ); runOnlyForDeploymentPostprocessing = 0; };
+		PF0000000000000000000003 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (BE0000000000000000000002, BE0000000000000000000003, ); runOnlyForDeploymentPostprocessing = 0; };
+		PF0000000000000000000004 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (BR0000000000000000000005, BR0000000000000000000006, ); runOnlyForDeploymentPostprocessing = 0; };
+		PF0000000000000000000005 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (BT0000000000000000000004, BT0000000000000000000005, ); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		GROOT00000000000000000001 = {isa = PBXGroup; children = (GCORE00000000000000000001, GAPPS00000000000000000001, GTEST00000000000000000001, GRES00000000000000000001, GCONFIG000000000000000001, GFRAME000000000000000001, GPROD0000000000000000001, ); sourceTree = "<group>"; };
+		GCORE00000000000000000001 /* FinderActionsCore */ = {isa = PBXGroup; children = (C00000000000000000000001, C00000000000000000000002, C00000000000000000000003, C00000000000000000000004, C00000000000000000000005, C00000000000000000000006, ); name = FinderActionsCore; path = Sources/FinderActionsCore; sourceTree = SOURCE_ROOT; };
+		GAPPS00000000000000000001 /* Apps */ = {isa = PBXGroup; children = (GAPP000000000000000000001, GEXT000000000000000000001, GRUN000000000000000000001, ); path = Apps; sourceTree = SOURCE_ROOT; };
+		GAPP000000000000000000001 /* FinderActionsApp */ = {isa = PBXGroup; children = (A00000000000000000000001, A00000000000000000000002, A00000000000000000000003, ); path = FinderActionsApp; sourceTree = "<group>"; };
+		GEXT000000000000000000001 /* FinderSyncExtension */ = {isa = PBXGroup; children = (E00000000000000000000001, E00000000000000000000002, ); path = FinderSyncExtension; sourceTree = "<group>"; };
+		GRUN000000000000000000001 /* FinderActionsRunner */ = {isa = PBXGroup; children = (R00000000000000000000001, R00000000000000000000002, R00000000000000000000003, R00000000000000000000004, ); path = FinderActionsRunner; sourceTree = "<group>"; };
+		GTEST00000000000000000001 /* Tests */ = {isa = PBXGroup; children = (T00000000000000000000001, T00000000000000000000002, T00000000000000000000003, ); name = FinderActionsCoreTests; path = Tests/FinderActionsCoreTests; sourceTree = SOURCE_ROOT; };
+		GRES00000000000000000001 /* Resources */ = {isa = PBXGroup; children = (P00000000000000000000001, P00000000000000000000002, P00000000000000000000003, GENT000000000000000000001, P00000000000000000000007, ); path = Resources; sourceTree = SOURCE_ROOT; };
+		GENT000000000000000000001 /* Entitlements */ = {isa = PBXGroup; children = (P00000000000000000000004, P00000000000000000000005, P00000000000000000000006, ); path = Entitlements; sourceTree = "<group>"; };
+		GCONFIG000000000000000001 /* Config */ = {isa = PBXGroup; children = (Q00000000000000000000001, Q00000000000000000000002, ); path = Config; sourceTree = SOURCE_ROOT; };
+		GFRAME000000000000000001 /* Frameworks */ = {isa = PBXGroup; children = (F00000000000000000000001, F00000000000000000000002, F00000000000000000000003, F00000000000000000000004, ); name = Frameworks; sourceTree = "<group>"; };
+		GPROD0000000000000000001 /* Products */ = {isa = PBXGroup; children = (PR0000000000000000000001, PR0000000000000000000002, PR0000000000000000000003, PR0000000000000000000004, PR0000000000000000000005, ); name = Products; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		NT0000000000000000000001 /* FinderActionsCore */ = {isa = PBXNativeTarget; buildConfigurationList = CLCORE0000000000000000001; buildPhases = (PS0000000000000000000001, PF0000000000000000000001, ); buildRules = (); dependencies = (); name = FinderActionsCore; productName = FinderActionsCore; productReference = PR0000000000000000000001; productType = "com.apple.product-type.library.static"; };
+		NT0000000000000000000002 /* Finder Actions */ = {isa = PBXNativeTarget; buildConfigurationList = CLAPP00000000000000000001; buildPhases = (PS0000000000000000000002, PF0000000000000000000002, RES0000000000000000000002, COPY000000000000000000001, COPY000000000000000000002, SHELL00000000000000000001, ); buildRules = (); dependencies = (DEP0000000000000000000001, DEP0000000000000000000002, DEP0000000000000000000003, ); name = "Finder Actions"; productName = FinderActions; productReference = PR0000000000000000000002; productType = "com.apple.product-type.application"; };
+		NT0000000000000000000003 /* FinderActionsFinderSync */ = {isa = PBXNativeTarget; buildConfigurationList = CLEXT00000000000000000001; buildPhases = (PS0000000000000000000003, PF0000000000000000000003, RES0000000000000000000003, ); buildRules = (); dependencies = (DEP0000000000000000000004, ); name = FinderActionsFinderSync; productName = FinderActionsFinderSync; productReference = PR0000000000000000000003; productType = "com.apple.product-type.app-extension"; };
+		NT0000000000000000000004 /* FinderActionsRunner */ = {isa = PBXNativeTarget; buildConfigurationList = CLRUN00000000000000000001; buildPhases = (PS0000000000000000000004, PF0000000000000000000004, RES0000000000000000000004, ); buildRules = (); dependencies = (DEP0000000000000000000005, ); name = FinderActionsRunner; productName = FinderActionsRunner; productReference = PR0000000000000000000004; productType = "com.apple.product-type.application"; };
+		NT0000000000000000000005 /* FinderActionsCoreTests */ = {isa = PBXNativeTarget; buildConfigurationList = CLTEST0000000000000000001; buildPhases = (PS0000000000000000000005, PF0000000000000000000005, RES0000000000000000000005, ); buildRules = (); dependencies = (DEP0000000000000000000006, ); name = FinderActionsCoreTests; productName = FinderActionsCoreTests; productReference = PR0000000000000000000005; productType = "com.apple.product-type.bundle.unit-test"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		PROJECT00000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600; TargetAttributes = {NT0000000000000000000002 = {CreatedOnToolsVersion = 16.0; ProvisioningStyle = Automatic; }; NT0000000000000000000003 = {CreatedOnToolsVersion = 16.0; ProvisioningStyle = Automatic; }; NT0000000000000000000004 = {CreatedOnToolsVersion = 16.0; ProvisioningStyle = Automatic; }; }; }; buildConfigurationList = CLPROJ0000000000000000001; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base, ); mainGroup = GROOT00000000000000000001; productRefGroup = GPROD0000000000000000001; projectDirPath = ""; projectRoot = ""; targets = (NT0000000000000000000002, NT0000000000000000000003, NT0000000000000000000004, NT0000000000000000000001, NT0000000000000000000005, ); };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		RES0000000000000000000002 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		RES0000000000000000000003 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		RES0000000000000000000004 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		RES0000000000000000000005 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		SHELL00000000000000000001 /* Generate LaunchAgent */ = {isa = PBXShellScriptBuildPhase; buildActionMask = 2147483647; files = (); inputPaths = ("$(SRCROOT)/Resources/Runner/com.finderactions.runner.plist.template", ); name = "Generate LaunchAgent"; outputPaths = ("$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchAgents/com.finderactions.runner.plist", ); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "set -eu\noutput=\"${TARGET_BUILD_DIR}/${CONTENTS_FOLDER_PATH}/Library/LaunchAgents/com.finderactions.runner.plist\"\n/bin/mkdir -p \"$(/usr/bin/dirname \"${output}\")\"\n/usr/bin/sed \"s|@MACH_SERVICE_NAME@|${APP_GROUP_IDENTIFIER}.runner|g\" \"${SRCROOT}/Resources/Runner/com.finderactions.runner.plist.template\" > \"${output}\"\n/usr/bin/plutil -lint \"${output}\"\n"; };
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		PS0000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BC0000000000000000000001, BC0000000000000000000002, BC0000000000000000000003, BC0000000000000000000004, BC0000000000000000000005, BC0000000000000000000006, ); runOnlyForDeploymentPostprocessing = 0; };
+		PS0000000000000000000002 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BA0000000000000000000001, BA0000000000000000000002, BA0000000000000000000003, ); runOnlyForDeploymentPostprocessing = 0; };
+		PS0000000000000000000003 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BE0000000000000000000001, BE0000000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
+		PS0000000000000000000004 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BR0000000000000000000001, BR0000000000000000000002, BR0000000000000000000003, BR0000000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
+		PS0000000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BT0000000000000000000001, BT0000000000000000000002, BT0000000000000000000003, BT0000000000000000000006, ); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DEP0000000000000000000001 = {isa = PBXTargetDependency; target = NT0000000000000000000001; targetProxy = PX0000000000000000000001; };
+		DEP0000000000000000000002 = {isa = PBXTargetDependency; target = NT0000000000000000000003; targetProxy = PX0000000000000000000002; };
+		DEP0000000000000000000003 = {isa = PBXTargetDependency; target = NT0000000000000000000004; targetProxy = PX0000000000000000000003; };
+		DEP0000000000000000000004 = {isa = PBXTargetDependency; target = NT0000000000000000000001; targetProxy = PX0000000000000000000004; };
+		DEP0000000000000000000005 = {isa = PBXTargetDependency; target = NT0000000000000000000001; targetProxy = PX0000000000000000000005; };
+		DEP0000000000000000000006 = {isa = PBXTargetDependency; target = NT0000000000000000000001; targetProxy = PX0000000000000000000006; };
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		CFGPROJDEBUG0000000000001 = {isa = XCBuildConfiguration; baseConfigurationReference = Q00000000000000000000001; buildSettings = {CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_TESTABILITY = YES; GCC_OPTIMIZATION_LEVEL = 0; ONLY_ACTIVE_ARCH = YES; SDKROOT = macosx; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; }; name = Debug; };
+		CFGPROJRELEASE00000000001 = {isa = XCBuildConfiguration; baseConfigurationReference = Q00000000000000000000001; buildSettings = {CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; SDKROOT = macosx; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = Release; };
+		CFGCOREDEBUG0000000000001 = {isa = XCBuildConfiguration; buildSettings = {DEFINES_MODULE = YES; PRODUCT_NAME = FinderActionsCore; SKIP_INSTALL = YES; SWIFT_INSTALL_OBJC_HEADER = NO; }; name = Debug; };
+		CFGCORELEASE0000000000001 = {isa = XCBuildConfiguration; buildSettings = {DEFINES_MODULE = YES; PRODUCT_NAME = FinderActionsCore; SKIP_INSTALL = YES; SWIFT_INSTALL_OBJC_HEADER = NO; }; name = Release; };
+		CFGAPPDEBUG00000000000001 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = Resources/Entitlements/App.entitlements; INFOPLIST_FILE = Resources/App/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).FinderActions"; PRODUCT_NAME = "Finder Actions"; }; name = Debug; };
+		CFGAPPRELEASE000000000001 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = Resources/Entitlements/App.entitlements; INFOPLIST_FILE = Resources/App/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).FinderActions"; PRODUCT_NAME = "Finder Actions"; }; name = Release; };
+		CFGEXTDEBUG00000000000001 = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_ENTITLEMENTS = Resources/Entitlements/FinderSync.entitlements; INFOPLIST_FILE = Resources/FinderSync/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).FinderActions.FinderSync"; PRODUCT_MODULE_NAME = FinderActionsFinderSync; PRODUCT_NAME = FinderActionsFinderSync; SKIP_INSTALL = YES; }; name = Debug; };
+		CFGEXTRELEASE000000000001 = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_ENTITLEMENTS = Resources/Entitlements/FinderSync.entitlements; INFOPLIST_FILE = Resources/FinderSync/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).FinderActions.FinderSync"; PRODUCT_MODULE_NAME = FinderActionsFinderSync; PRODUCT_NAME = FinderActionsFinderSync; SKIP_INSTALL = YES; }; name = Release; };
+		CFGRUNDEBUG00000000000001 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = Resources/Entitlements/Runner.entitlements; INFOPLIST_FILE = Resources/Runner/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).FinderActions.Runner"; PRODUCT_MODULE_NAME = FinderActionsRunner; PRODUCT_NAME = FinderActionsRunner; SKIP_INSTALL = YES; }; name = Debug; };
+		CFGRUNRELEASE000000000001 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = Resources/Entitlements/Runner.entitlements; INFOPLIST_FILE = Resources/Runner/Info.plist; PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).FinderActions.Runner"; PRODUCT_MODULE_NAME = FinderActionsRunner; PRODUCT_NAME = FinderActionsRunner; SKIP_INSTALL = YES; }; name = Release; };
+		CFGTESTDEBUG0000000000001 = {isa = XCBuildConfiguration; buildSettings = {GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).FinderActionsCoreTests"; PRODUCT_NAME = FinderActionsCoreTests; }; name = Debug; };
+		CFGTESTRELEASE00000000001 = {isa = XCBuildConfiguration; buildSettings = {GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).FinderActionsCoreTests"; PRODUCT_NAME = FinderActionsCoreTests; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CLPROJ0000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (CFGPROJDEBUG0000000000001, CFGPROJRELEASE00000000001, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		CLCORE0000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (CFGCOREDEBUG0000000000001, CFGCORELEASE0000000000001, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		CLAPP00000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (CFGAPPDEBUG00000000000001, CFGAPPRELEASE000000000001, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		CLEXT00000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (CFGEXTDEBUG00000000000001, CFGEXTRELEASE000000000001, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		CLRUN00000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (CFGRUNDEBUG00000000000001, CFGRUNRELEASE000000000001, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		CLTEST0000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (CFGTESTDEBUG0000000000001, CFGTESTRELEASE00000000001, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = PROJECT00000000000000001 /* Project object */;
+}

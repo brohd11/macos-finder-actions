@@ -1,0 +1,7 @@
+[Finder Action]
+Name=New Text File
+Exec=name="untitled.txt"; n=1; while [[ -e "$name" ]]; do (( n++ )); name="untitled $n.txt"; done; : > "$name"; open -R "$name"
+Selection=none
+Extensions=any;
+Order=20
+Icon=doc.badge.plus

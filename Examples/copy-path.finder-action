@@ -1,0 +1,8 @@
+[Finder Action]
+Name=Copy Path
+Exec=printf '%s' "$1" | pbcopy
+Selection=single
+Extensions=any;
+Group=Utilities/Clipboard
+Order=100
+Icon=doc.on.clipboard
