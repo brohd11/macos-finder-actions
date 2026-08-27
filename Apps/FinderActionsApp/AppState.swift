@@ -249,7 +249,7 @@ final class AppState: ObservableObject {
                 try await launchAgentManager.prepare()
                 var legacyCleanupError: (any Error)?
                 do {
-                    try await legacyRunnerService.unregister()
+                    try await unregisterLegacyRunner()
                 } catch {
                     legacyCleanupError = error
                 }
@@ -266,7 +266,7 @@ final class AppState: ObservableObject {
             runnerControlInFlight = false
         } else if legacyStatus == .requiresApproval {
             do {
-                try await legacyRunnerService.unregister()
+                try await unregisterLegacyRunner()
             } catch {
                 errorMessage = "The previous runner registration could not be removed: \(error.localizedDescription)"
             }
@@ -274,6 +274,20 @@ final class AppState: ObservableObject {
 
         runnerInitializationComplete = true
         await reconcileRunnerRegistration(allowAutomaticRepair: true)
+    }
+
+    private func unregisterLegacyRunner() async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            // Using the completion-handler overload keeps the non-Sendable
+            // SMAppService on the main actor when compiling with Swift 6.1.
+            legacyRunnerService.unregister { error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
     }
 
     private func refreshRunnerRegistration() {
