@@ -26,6 +26,8 @@ final class AppState: ObservableObject {
     @Published var notificationStatus = "Checking…"
     @Published var errorMessage: String?
     @Published private(set) var configRoot = FinderActionConstants.defaultConfigRoot
+    /// Set when configRoot is a symbolic link, so the dashboard can show where it points.
+    @Published private(set) var resolvedConfigRoot: URL?
     @Published private(set) var usesCustomConfigDirectory = false
     @Published private(set) var runnerRegistration: RunnerRegistrationState = .checking
     @Published private(set) var runnerHealth: RunnerHealthState = .checking
@@ -120,7 +122,7 @@ final class AppState: ObservableObject {
             executableURL: runnerExecutable
         )
 
-        if !usesCustomConfigDirectory {
+        if !usesCustomConfigDirectory, !FileManager.default.fileExists(atPath: configRoot.path) {
             try? FileManager.default.createDirectory(at: configRoot, withIntermediateDirectories: true)
         }
         startPolling()
@@ -345,22 +347,25 @@ final class AppState: ObservableObject {
     }
 
     func revealConfigFolder() {
-        if usesCustomConfigDirectory {
-            var isDirectory: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: configRoot.path, isDirectory: &isDirectory),
-                  isDirectory.boolValue else {
-                errorMessage = "The selected configuration directory is unavailable: \(configRoot.path)"
+        let target = resolvedConfigRoot ?? configRoot
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: target.path, isDirectory: &isDirectory) {
+            guard isDirectory.boolValue else {
+                errorMessage = "The configuration path is not a directory: \(target.path)"
                 return
             }
+        } else if usesCustomConfigDirectory {
+            errorMessage = "The selected configuration directory is unavailable: \(target.path)"
+            return
         } else {
             do {
-                try FileManager.default.createDirectory(at: configRoot, withIntermediateDirectories: true)
+                try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
             } catch {
                 errorMessage = error.localizedDescription
                 return
             }
         }
-        NSWorkspace.shared.activateFileViewerSelecting([configRoot])
+        NSWorkspace.shared.activateFileViewerSelecting([target])
     }
 
     func chooseConfigDirectory() {
@@ -391,6 +396,7 @@ final class AppState: ObservableObject {
 
     private func applyConfigDirectorySelection(_ selection: ConfigDirectorySelection) {
         configRoot = selection.url
+        resolvedConfigRoot = nil
         usesCustomConfigDirectory = selection.isCustom
         snapshot = nil
         guard runnerRegistered, runnerClient != nil else { return }
@@ -448,6 +454,9 @@ final class AppState: ObservableObject {
     private func applyRunnerSnapshot(_ snapshot: ActionSnapshot) {
         self.snapshot = snapshot
         configRoot = URL(fileURLWithPath: snapshot.configRoot, isDirectory: true)
+        resolvedConfigRoot = snapshot.resolvedConfigRoot.map {
+            URL(fileURLWithPath: $0, isDirectory: true)
+        }
     }
 
     private func markRunnerUnavailable() {

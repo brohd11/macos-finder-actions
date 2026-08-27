@@ -95,10 +95,15 @@ struct ContentView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(!state.runnerAvailable)
             }
-            Text(state.configRoot.path)
-                .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(state.configRoot.path)
+                if let resolved = state.resolvedConfigRoot {
+                    Text("→ \(resolved.path)")
+                }
+            }
+            .font(.system(.caption, design: .monospaced))
+            .foregroundStyle(.secondary)
+            .textSelection(.enabled)
 
             List(state.snapshot?.actions ?? []) { action in
                 HStack {

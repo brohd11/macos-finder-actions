@@ -201,19 +201,27 @@ public struct FinderInvocation: Codable, Hashable, Sendable {
 
 public struct ActionSnapshot: Codable, Sendable {
     public let generatedAt: Date
+    /// The directory as configured, which may be a symbolic link.
     public let configRoot: String
+    /// Where `configRoot` actually points, when it is a symbolic link. Nil otherwise.
+    public let resolvedConfigRoot: String?
     public let actions: [FinderAction]
     public let diagnostics: [ActionDiagnostic]
 
     public init(
         generatedAt: Date = Date(),
         configRoot: String,
+        resolvedConfigRoot: String? = nil,
         actions: [FinderAction],
         diagnostics: [ActionDiagnostic]
     ) {
         self.generatedAt = generatedAt
         self.configRoot = configRoot
+        self.resolvedConfigRoot = resolvedConfigRoot
         self.actions = actions
         self.diagnostics = diagnostics
     }
+
+    /// The directory to read and reveal: the symlink target when there is one.
+    public var effectiveConfigRoot: String { resolvedConfigRoot ?? configRoot }
 }

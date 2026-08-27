@@ -27,7 +27,7 @@ final class CatalogCoordinator: @unchecked Sendable {
     }
 
     func configure(_ selection: ConfigDirectorySelection) throws {
-        if !selection.isCustom {
+        if !selection.isCustom, !FileManager.default.fileExists(atPath: selection.url.path) {
             try FileManager.default.createDirectory(at: selection.url, withIntermediateDirectories: true)
         }
         lock.withLock {

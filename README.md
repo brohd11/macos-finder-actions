@@ -111,6 +111,37 @@ See [`Examples`](Examples) for copy-path and new-file configurations. Existing s
 scripts can be called unchanged from an `Exec` line; any guard blocks they carry become
 redundant because Finder Actions filters the menu before launch.
 
+### Symlinks and dotfiles
+
+The config directory is read recursively with symlinks followed, so it can be managed
+by GNU Stow or any other dotfiles tool. All three shapes work:
+
+- `~/.config/finder-actions` itself a symlink to a directory in your repo (what Stow
+  creates when the target does not exist yet)
+- individual `.finder-action` files symlinked into a real directory (what Stow creates
+  when the target directory already exists)
+- symlinked subdirectories, for nested `Group` menus
+
+Edits are noticed through the link, so saving a file in your repo updates the Finder
+menu within about a second.
+
+An action's ID is its path relative to the config directory, so IDs — and therefore run
+history — stay stable whichever of those layouts you use. `FINDER_ACTION_CONFIG` and
+`FINDER_ACTION_CONFIG_DIR` are the *resolved* paths, so a helper script stored beside an
+action in your repo is found:
+
+```ini
+Exec="$FINDER_ACTION_CONFIG_DIR/scripts/resize.sh" --max 2000 "$@"
+```
+
+Broken links are reported in the dashboard's **Problems** tab and skipped; the rest of
+your actions keep working. Symlink cycles are detected and skipped. Hidden entries
+(`.git`, `.DS_Store`) are ignored.
+
+Because symlinks work, the **Choose…** directory picker is no longer needed to keep
+actions in a dotfiles repo — stow into the default location and press **Reset**. The
+picker remains for pointing at a directory you would rather not symlink.
+
 
 ## Platform caveats
 
