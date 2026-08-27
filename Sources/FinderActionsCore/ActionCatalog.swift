@@ -57,35 +57,3 @@ public struct ActionCatalogLoader: Sendable {
         return String(file.path.dropFirst(rootPath.count))
     }
 }
-
-public enum ActionSnapshotIO {
-    public static func load(from url: URL) throws -> ActionSnapshot {
-        let data = try Data(contentsOf: url)
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let snapshot = try decoder.decode(ActionSnapshot.self, from: data)
-        guard snapshot.schemaVersion == FinderActionConstants.schemaVersion else {
-            throw SnapshotError.unsupportedSchema(snapshot.schemaVersion)
-        }
-        return snapshot
-    }
-
-    public static func save(_ snapshot: ActionSnapshot, to url: URL) throws {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        let data = try encoder.encode(snapshot)
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try data.write(to: url, options: .atomic)
-    }
-
-    public enum SnapshotError: LocalizedError {
-        case unsupportedSchema(Int)
-
-        public var errorDescription: String? {
-            switch self {
-            case .unsupportedSchema(let version): "Unsupported action snapshot schema \(version)."
-            }
-        }
-    }
-}

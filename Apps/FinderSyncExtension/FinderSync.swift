@@ -171,8 +171,7 @@ final class FinderSyncExtension: FIFinderSync {
     }
 
     private func loadSnapshot() -> ActionSnapshot? {
-        guard let container = RuntimeConfiguration.sharedContainerURL() else { return nil }
-        return try? ActionSnapshotIO.load(from: container.appendingPathComponent(FinderActionConstants.snapshotFileName))
+        ActionCatalogLoader().load(from: FinderActionConstants.configRoot)
     }
 
 }

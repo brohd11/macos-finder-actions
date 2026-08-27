@@ -30,6 +30,9 @@ final class RunnerService: NSObject, NSXPCListenerDelegate, RunnerXPCProtocol {
     }
 
     func run(_ request: RunRequest, withReply reply: @escaping (RunReply) -> Void) {
+        // The Finder extension reads configuration directly so its menus update
+        // immediately. Reload here as well to validate against the same contents.
+        catalog.reload()
         guard let action = catalog.action(id: request.actionID) else {
             reply(rejectedReply(request, action: nil, message: "Action no longer exists."))
             return

@@ -60,3 +60,25 @@ final class ActionConfigParserTests: XCTestCase {
         XCTAssertFalse(action.separatorBefore)
     }
 }
+
+final class ActionCatalogLoaderTests: XCTestCase {
+    func testReloadReflectsConfigurationChangesWithoutSnapshot() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let actionURL = directory.appendingPathComponent("dynamic.finder-action")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        try "[Finder Action]\nName=First\nExec=true".write(to: actionURL, atomically: true, encoding: .utf8)
+        let first = ActionCatalogLoader().load(from: directory)
+        XCTAssertEqual(first.actions.map(\.name), ["First"])
+
+        try "[Finder Action]\nName=Second\nExec=true".write(to: actionURL, atomically: true, encoding: .utf8)
+        let second = ActionCatalogLoader().load(from: directory)
+        XCTAssertEqual(second.actions.map(\.name), ["Second"])
+
+        try FileManager.default.removeItem(at: actionURL)
+        let removed = ActionCatalogLoader().load(from: directory)
+        XCTAssertTrue(removed.actions.isEmpty)
+    }
+}

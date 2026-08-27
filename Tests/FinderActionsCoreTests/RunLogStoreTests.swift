@@ -74,6 +74,51 @@ final class RunnerClientCompletionTests: XCTestCase {
             XCTAssertTrue(error is ExpectedError)
         }
     }
+
+    func testPendingCallTimesOut() async {
+        do {
+            let _: String = try await withCheckedThrowingContinuation { continuation in
+                let pending = PendingXPCCall<String>(continuation: continuation)
+                pending.scheduleTimeout(after: 0.01)
+            }
+            XCTFail("Expected the pending call to time out")
+        } catch {
+            guard let clientError = error as? RunnerClientError, case .timedOut = clientError else {
+                return XCTFail("Expected RunnerClientError.timedOut, got \(error)")
+            }
+        }
+    }
+
+    func testSuccessfulCallCancelsTimeout() async throws {
+        let result: String = try await withCheckedThrowingContinuation { continuation in
+            let pending = PendingXPCCall<String>(continuation: continuation)
+            pending.scheduleTimeout(after: 1)
+            DispatchQueue.global().asyncAfter(deadline: .now() + 0.01) {
+                pending.succeed("ready")
+            }
+        }
+
+        XCTAssertEqual(result, "ready")
+    }
+
+    func testLateSuccessAfterTimeoutIsIgnored() async {
+        do {
+            let _: String = try await withCheckedThrowingContinuation { continuation in
+                let pending = PendingXPCCall<String>(continuation: continuation)
+                pending.scheduleTimeout(after: 0.01)
+                DispatchQueue.global().asyncAfter(deadline: .now() + 0.02) {
+                    pending.succeed("too late")
+                }
+            }
+            XCTFail("Expected the pending call to time out")
+        } catch {
+            guard let clientError = error as? RunnerClientError, case .timedOut = clientError else {
+                return XCTFail("Expected RunnerClientError.timedOut, got \(error)")
+            }
+        }
+
+        try? await Task.sleep(for: .milliseconds(30))
+    }
 }
 
 final class MenuActionPayloadTests: XCTestCase {

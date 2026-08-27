@@ -6,9 +6,13 @@
 	<true/>
 	<key>com.apple.security.files.user-selected.read-only</key>
 	<true/>
-	<key>com.apple.security.application-groups</key>
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
 	<array>
-		<string>$(APP_GROUP_IDENTIFIER)</string>
+		<string>/.config/finder-actions/</string>
+	</array>
+	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+	<array>
+		<string>$(MACH_SERVICE_NAME)</string>
 	</array>
 </dict>
 </plist>

@@ -4,7 +4,6 @@ public enum FinderActionConstants {
     public static let schemaVersion = 1
     public static let configDirectoryName = "finder-actions"
     public static let configExtension = "finder-action"
-    public static let snapshotFileName = "actions.json"
     public static let runDirectoryName = "runs"
     public static let launchAgentPlistName = "com.finderactions.runner.plist"
 
@@ -12,6 +11,14 @@ public enum FinderActionConstants {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".config", isDirectory: true)
             .appendingPathComponent(configDirectoryName, isDirectory: true)
+    }
+
+    public static var runLogDirectory: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library", isDirectory: true)
+            .appendingPathComponent("Application Support", isDirectory: true)
+            .appendingPathComponent("Finder Actions", isDirectory: true)
+            .appendingPathComponent(runDirectoryName, isDirectory: true)
     }
 }
 

@@ -88,6 +88,7 @@ public enum RunnerClientError: LocalizedError, Sendable {
     case connectionInterrupted
     case connectionInvalidated
     case proxyUnavailable
+    case timedOut
 
     public var errorDescription: String? {
         switch self {
@@ -97,12 +98,16 @@ public enum RunnerClientError: LocalizedError, Sendable {
             "The Finder Actions runner is unavailable. Enable the background runner and try again."
         case .proxyUnavailable:
             "The Finder Actions runner could not create an XPC proxy."
+        case .timedOut:
+            "The Finder Actions runner did not respond in time."
         }
     }
 }
 
 /// Owns the callback-based NSXPCConnection boundary and exposes actor-safe async calls.
 public final class RunnerClient: @unchecked Sendable {
+    private static let standardTimeout: TimeInterval = 5
+    private static let authorizationTimeout: TimeInterval = 60
     private let machServiceName: String
 
     public init(machServiceName: String) {
@@ -110,36 +115,37 @@ public final class RunnerClient: @unchecked Sendable {
     }
 
     public func run(_ request: RunRequest) async throws -> RunReply {
-        try await call { proxy, reply in
+        try await call(timeout: Self.standardTimeout) { proxy, reply in
             proxy.run(request, withReply: reply)
         }
     }
 
     public func reload() async throws -> RunReply {
-        try await call { proxy, reply in
+        try await call(timeout: Self.standardTimeout) { proxy, reply in
             proxy.reload(withReply: reply)
         }
     }
 
     public func ping() async throws -> RunReply {
-        try await call { proxy, reply in
+        try await call(timeout: Self.standardTimeout) { proxy, reply in
             proxy.ping(withReply: reply)
         }
     }
 
     public func notificationStatus() async throws -> String {
-        try await call { proxy, reply in
+        try await call(timeout: Self.standardTimeout) { proxy, reply in
             proxy.notificationStatus(withReply: reply)
         }
     }
 
     public func requestNotificationAuthorization() async throws -> RunReply {
-        try await call { proxy, reply in
+        try await call(timeout: Self.authorizationTimeout) { proxy, reply in
             proxy.requestNotificationAuthorization(withReply: reply)
         }
     }
 
     private func call<Value: Sendable>(
+        timeout: TimeInterval,
         _ invoke: @escaping @Sendable (RunnerXPCProtocol, @escaping (Value) -> Void) -> Void
     ) async throws -> Value {
         try await withCheckedThrowingContinuation { continuation in
@@ -153,6 +159,7 @@ public final class RunnerClient: @unchecked Sendable {
             connection.invalidationHandler = {
                 pending.fail(RunnerClientError.connectionInvalidated)
             }
+            pending.scheduleTimeout(after: timeout)
             connection.resume()
 
             guard let proxy = connection.remoteObjectProxyWithErrorHandler({ error in
@@ -173,6 +180,7 @@ final class PendingXPCCall<Value: Sendable>: @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: CheckedContinuation<Value, any Error>?
     private var connection: NSXPCConnection?
+    private var timeoutWorkItem: DispatchWorkItem?
 
     init(continuation: CheckedContinuation<Value, any Error>) {
         self.continuation = continuation
@@ -182,6 +190,21 @@ final class PendingXPCCall<Value: Sendable>: @unchecked Sendable {
         lock.lock()
         self.connection = connection
         lock.unlock()
+    }
+
+    func scheduleTimeout(after interval: TimeInterval) {
+        let item = DispatchWorkItem {
+            self.fail(RunnerClientError.timedOut)
+        }
+        lock.lock()
+        guard continuation != nil else {
+            lock.unlock()
+            item.cancel()
+            return
+        }
+        timeoutWorkItem = item
+        lock.unlock()
+        DispatchQueue.global().asyncAfter(deadline: .now() + interval, execute: item)
     }
 
     func succeed(_ value: Value) {
@@ -201,8 +224,11 @@ final class PendingXPCCall<Value: Sendable>: @unchecked Sendable {
         self.continuation = nil
         let connection = self.connection
         self.connection = nil
+        let timeoutWorkItem = self.timeoutWorkItem
+        self.timeoutWorkItem = nil
         lock.unlock()
 
+        timeoutWorkItem?.cancel()
         continuation.resume(with: result)
         connection?.invalidate()
     }
@@ -217,16 +243,7 @@ public enum RuntimeConfiguration {
         return value
     }
 
-    public static func appGroupIdentifier(bundle: Bundle = .main) -> String? {
-        infoValue("AppGroupIdentifier", bundle: bundle)
-    }
-
     public static func machServiceName(bundle: Bundle = .main) -> String? {
         infoValue("MachServiceName", bundle: bundle)
-    }
-
-    public static func sharedContainerURL(bundle: Bundle = .main) -> URL? {
-        guard let identifier = appGroupIdentifier(bundle: bundle) else { return nil }
-        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: identifier)
     }
 }

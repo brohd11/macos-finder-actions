@@ -1,16 +1,13 @@
 import Foundation
 import FinderActionsCore
 
-guard
-    let containerURL = RuntimeConfiguration.sharedContainerURL(),
-    let machServiceName = RuntimeConfiguration.machServiceName()
-else {
-    FileHandle.standardError.write(Data("Finder Actions Runner: missing app-group configuration.\n".utf8))
+guard let machServiceName = RuntimeConfiguration.machServiceName() else {
+    FileHandle.standardError.write(Data("Finder Actions Runner: missing Mach service configuration.\n".utf8))
     exit(78)
 }
 
-let catalog = CatalogCoordinator(configRoot: FinderActionConstants.configRoot, containerURL: containerURL)
-let logStore = RunLogStore(directory: containerURL.appendingPathComponent(FinderActionConstants.runDirectoryName, isDirectory: true))
+let catalog = CatalogCoordinator(configRoot: FinderActionConstants.configRoot)
+let logStore = RunLogStore(directory: FinderActionConstants.runLogDirectory)
 let service = RunnerService(
     machServiceName: machServiceName,
     catalog: catalog,

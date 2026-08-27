@@ -40,9 +40,9 @@ struct ContentView: View {
             statusCard(
                 title: "Background runner",
                 value: state.runnerStatus,
-                positive: state.runnerStatus == "Enabled",
-                button: state.runnerStatus == "Enabled" ? "Disable" : "Enable",
-                action: state.runnerStatus == "Enabled" ? state.unregisterRunner : state.registerRunner
+                positive: state.runnerAvailable,
+                button: state.runnerRegistered ? "Disable" : "Enable",
+                action: state.runnerRegistered ? state.unregisterRunner : state.registerRunner
             )
             statusCard(
                 title: "Failure notifications",
@@ -50,7 +50,7 @@ struct ContentView: View {
                 positive: state.notificationStatus == "Enabled",
                 button: "Allow",
                 action: state.requestNotifications,
-                buttonDisabled: state.runnerStatus != "Enabled"
+                buttonDisabled: !state.runnerAvailable || state.notificationAuthorizationInFlight
             )
         }
     }
@@ -89,7 +89,7 @@ struct ContentView: View {
                 Button("Reveal Config Folder", action: state.revealConfigFolder)
                 Button("Reload Now", action: state.reloadConfiguration)
                     .buttonStyle(.borderedProminent)
-                    .disabled(state.runnerStatus != "Enabled")
+                    .disabled(!state.runnerAvailable)
             }
             Text(state.configRoot.path)
                 .font(.system(.caption, design: .monospaced))

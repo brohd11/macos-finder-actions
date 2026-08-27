@@ -3,16 +3,14 @@ import FinderActionsCore
 
 final class CatalogCoordinator: @unchecked Sendable {
     private let configRoot: URL
-    private let snapshotURL: URL
     private let loader = ActionCatalogLoader()
     private let lock = NSLock()
     private var snapshot: ActionSnapshot
     private var fingerprint = ""
     private var timer: DispatchSourceTimer?
 
-    init(configRoot: URL, containerURL: URL) {
+    init(configRoot: URL) {
         self.configRoot = configRoot
-        self.snapshotURL = containerURL.appendingPathComponent(FinderActionConstants.snapshotFileName)
         self.snapshot = ActionSnapshot(configRoot: configRoot.path, actions: [], diagnostics: [])
     }
 
@@ -33,7 +31,6 @@ final class CatalogCoordinator: @unchecked Sendable {
             snapshot = loaded
             fingerprint = currentFingerprint()
         }
-        try? ActionSnapshotIO.save(loaded, to: snapshotURL)
     }
 
     func action(id: String) -> FinderAction? {

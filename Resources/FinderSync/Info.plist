@@ -31,9 +31,7 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).FinderSyncExtension</string>
 	</dict>
-	<key>AppGroupIdentifier</key>
-	<string>$(APP_GROUP_IDENTIFIER)</string>
 	<key>MachServiceName</key>
-	<string>$(APP_GROUP_IDENTIFIER).runner</string>
+	<string>$(MACH_SERVICE_NAME)</string>
 </dict>
 </plist>

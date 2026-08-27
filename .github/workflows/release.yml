@@ -18,7 +18,7 @@ concurrency:
 
 env:
   BUNDLE_ID_PREFIX: com.brohd
-  APP_GROUP_IDENTIFIER: group.com.brohd.FinderActions
+  MACH_SERVICE_NAME: group.com.brohd.FinderActions.runner
 
 jobs:
   build:
@@ -90,7 +90,7 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             DEVELOPMENT_TEAM= \
             "BUNDLE_ID_PREFIX=$BUNDLE_ID_PREFIX" \
-            "APP_GROUP_IDENTIFIER=$APP_GROUP_IDENTIFIER" \
+            "MACH_SERVICE_NAME=$MACH_SERVICE_NAME" \
             ONLY_ACTIVE_ARCH=YES \
             ARCHS=arm64 \
             test
@@ -108,7 +108,7 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             DEVELOPMENT_TEAM= \
             "BUNDLE_ID_PREFIX=$BUNDLE_ID_PREFIX" \
-            "APP_GROUP_IDENTIFIER=$APP_GROUP_IDENTIFIER" \
+            "MACH_SERVICE_NAME=$MACH_SERVICE_NAME" \
             ONLY_ACTIVE_ARCH=NO \
             'ARCHS=arm64 x86_64' \
             build
@@ -143,23 +143,17 @@ jobs:
           entitlements="$RUNNER_TEMP/Entitlements"
 
           mkdir -p "$entitlements"
-          cp Resources/Entitlements/App.entitlements "$entitlements/App.entitlements"
           cp Resources/Entitlements/FinderSync.entitlements "$entitlements/FinderSync.entitlements"
-          cp Resources/Entitlements/Runner.entitlements "$entitlements/Runner.entitlements"
 
-          for file in "$entitlements/App.entitlements" "$entitlements/FinderSync.entitlements" "$entitlements/Runner.entitlements"; do
-            /usr/libexec/PlistBuddy \
-              -c "Set :com.apple.security.application-groups:0 $APP_GROUP_IDENTIFIER" \
-              "$file"
-            plutil -lint "$file"
-          done
+          /usr/libexec/PlistBuddy \
+            -c "Set :com.apple.security.temporary-exception.mach-lookup.global-name:0 $MACH_SERVICE_NAME" \
+            "$entitlements/FinderSync.entitlements"
+          plutil -lint "$entitlements/FinderSync.entitlements"
 
-          codesign --force --sign - --timestamp=none --options runtime \
-            --entitlements "$entitlements/Runner.entitlements" "$runner"
+          codesign --force --sign - --timestamp=none --options runtime "$runner"
           codesign --force --sign - --timestamp=none --options runtime \
             --entitlements "$entitlements/FinderSync.entitlements" "$extension"
-          codesign --force --sign - --timestamp=none --options runtime \
-            --entitlements "$entitlements/App.entitlements" "$app"
+          codesign --force --sign - --timestamp=none --options runtime "$app"
 
       - name: Verify package
         run: |
@@ -196,8 +190,9 @@ jobs:
           assert_plist_value "$app/Contents/Info.plist" CFBundleIdentifier com.brohd.FinderActions
           assert_plist_value "$extension/Contents/Info.plist" CFBundleIdentifier com.brohd.FinderActions.FinderSync
           assert_plist_value "$runner/Contents/Info.plist" CFBundleIdentifier com.brohd.FinderActions.Runner
-          assert_plist_value "$app/Contents/Info.plist" AppGroupIdentifier group.com.brohd.FinderActions
-          assert_plist_value "$app/Contents/Info.plist" MachServiceName group.com.brohd.FinderActions.runner
+          assert_plist_value "$app/Contents/Info.plist" MachServiceName "$MACH_SERVICE_NAME"
+          assert_plist_value "$extension/Contents/Info.plist" MachServiceName "$MACH_SERVICE_NAME"
+          assert_plist_value "$runner/Contents/Info.plist" MachServiceName "$MACH_SERVICE_NAME"
 
           for plist in "$app/Contents/Info.plist" "$extension/Contents/Info.plist" "$runner/Contents/Info.plist"; do
             assert_plist_value "$plist" CFBundleShortVersionString "$RELEASE_VERSION"
@@ -217,6 +212,20 @@ jobs:
             echo 'An ad-hoc release must not contain a provisioning profile.' >&2
             exit 1
           fi
+
+          for code in "$app" "$extension" "$runner"; do
+            if codesign -d --entitlements :- "$code" 2>&1 | grep -q 'com.apple.security.application-groups'; then
+              echo "$code unexpectedly contains an App Group entitlement." >&2
+              exit 1
+            fi
+          done
+
+          extension_entitlements="$(codesign -d --entitlements :- "$extension" 2>&1)"
+          grep -q 'com.apple.security.app-sandbox' <<< "$extension_entitlements"
+          grep -q 'com.apple.security.temporary-exception.files.home-relative-path.read-only' <<< "$extension_entitlements"
+          grep -q '/.config/finder-actions/' <<< "$extension_entitlements"
+          grep -q 'com.apple.security.temporary-exception.mach-lookup.global-name' <<< "$extension_entitlements"
+          grep -q "$MACH_SERVICE_NAME" <<< "$extension_entitlements"
 
           echo 'Outer app entitlements:'
           codesign -d --entitlements :- "$app" 2>&1
