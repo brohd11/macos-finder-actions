@@ -5,51 +5,79 @@ import OSLog
 
 final class FinderSyncExtension: FIFinderSync {
     private let controller = FIFinderSyncController.default()
-    nonisolated private static let actionLogger = Logger(
+    nonisolated private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "FinderActionsFinderSync",
         category: "Actions"
     )
 
     override init() {
         super.init()
-        controller.directoryURLs = [URL(fileURLWithPath: "/", isDirectory: true)]
+        let monitoredRoot = URL(fileURLWithPath: "/", isDirectory: true)
+        controller.directoryURLs = [monitoredRoot]
+        Self.logger.notice(
+            "Finder Sync initialized bundle=\(Bundle.main.bundleIdentifier ?? "unknown", privacy: .public) monitoredRoot=\(monitoredRoot.path, privacy: .public) configRoot=\(FinderActionConstants.configRoot.path, privacy: .public)"
+        )
     }
 
     override func menu(for menuKind: FIMenuKind) -> NSMenu? {
-        guard let kind = invocationKind(for: menuKind),
-              let invocation = currentInvocation(kind: kind),
-              let snapshot = loadSnapshot()
-        else { return nil }
+        let menuKindName = menuKindDescription(menuKind)
+        Self.logger.notice("Finder requested menu kind=\(menuKindName, privacy: .public)")
+
+        guard let kind = invocationKind(for: menuKind) else {
+            Self.logger.notice("Returning no menu for unsupported kind=\(menuKindName, privacy: .public)")
+            return nil
+        }
+        guard let invocation = currentInvocation(kind: kind) else {
+            Self.logger.error("Returning no menu because the \(kind.rawValue, privacy: .public) invocation was unavailable")
+            return nil
+        }
+
+        Self.logger.notice(
+            "Resolved invocation kind=\(kind.rawValue, privacy: .public) itemCount=\(invocation.items.count, privacy: .public) targetDirectory=\(invocation.targetDirectory, privacy: .public)"
+        )
+        let snapshot = loadSnapshot()
 
         let actions = ActionMatcher.applicableActions(in: snapshot, invocation: invocation)
+        let actionIDs = actions.map(\.id).joined(separator: ",")
+        Self.logger.notice(
+            "Matched \(actions.count, privacy: .public) of \(snapshot.actions.count, privacy: .public) active actions ids=\(actionIDs, privacy: .public)"
+        )
         let entries = ActionMenuBuilder.build(actions: actions)
-        guard !entries.isEmpty else { return nil }
+        guard !entries.isEmpty else {
+            Self.logger.notice("Returning no menu because no actions matched the invocation")
+            return nil
+        }
 
         let menu = NSMenu()
         let isDarkAppearance = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
         append(entries, to: menu, invocation: invocation, isDarkAppearance: isDarkAppearance)
-        return menu.items.isEmpty ? nil : menu
+        guard !menu.items.isEmpty else {
+            Self.logger.error("Returning no menu because menu construction produced no items")
+            return nil
+        }
+        Self.logger.notice("Returning Finder menu with \(menu.items.count, privacy: .public) top-level items")
+        return menu
     }
 
     @IBAction nonisolated func performAction(_ sender: AnyObject?) {
         guard let item = sender as? NSMenuItem else {
-            Self.actionLogger.error("Finder menu action has an invalid sender")
+            Self.logger.error("Finder menu action has an invalid sender")
             return
         }
         let tag = item.tag
         guard let payload = MenuActionRegistry.shared.take(tag: tag) else {
-            Self.actionLogger.error("Finder menu action has an unknown tag \(tag, privacy: .public)")
+            Self.logger.error("Finder menu action has an unknown tag \(tag, privacy: .public)")
             return
         }
         guard let machServiceName = RuntimeConfiguration.machServiceName() else {
-            Self.actionLogger.error("The runner Mach service name is missing")
+            Self.logger.error("The runner Mach service name is missing")
             return
         }
 
         let actionID = payload.actionID
         let request = payload.runRequest
         let runnerClient = RunnerClient(machServiceName: machServiceName)
-        let logger = Self.actionLogger
+        let logger = Self.logger
         logger.info("Invoking Finder action \(actionID, privacy: .public)")
 
         Task.detached { [runnerClient, request, actionID, logger] in
@@ -145,18 +173,42 @@ final class FinderSyncExtension: FIFinderSync {
         }
     }
 
+    private func menuKindDescription(_ menuKind: FIMenuKind) -> String {
+        switch menuKind {
+        case .contextualMenuForItems: "items"
+        case .contextualMenuForContainer: "container"
+        case .contextualMenuForSidebar: "sidebar"
+        case .toolbarItemMenu: "toolbar"
+        @unknown default: "unknown"
+        }
+    }
+
     private func currentInvocation(kind: InvocationKind) -> FinderInvocation? {
         switch kind {
         case .items:
-            guard let urls = controller.selectedItemURLs(), !urls.isEmpty else { return nil }
+            guard let urls = controller.selectedItemURLs(), !urls.isEmpty else {
+                Self.logger.error("Finder supplied no selected item URLs")
+                return nil
+            }
             let items = urls.filter(\.isFileURL).map(Self.finderItem)
-            guard items.count == urls.count, let first = urls.first else { return nil }
+            guard items.count == urls.count, let first = urls.first else {
+                Self.logger.error(
+                    "Finder selection contained unsupported URLs total=\(urls.count, privacy: .public) fileURLs=\(items.count, privacy: .public)"
+                )
+                return nil
+            }
             return FinderInvocation(kind: .items, items: items, targetDirectory: first.deletingLastPathComponent().path)
         case .background:
-            guard let target = controller.targetedURL(), target.isFileURL else { return nil }
+            guard let target = controller.targetedURL(), target.isFileURL else {
+                Self.logger.error("Finder supplied no file URL for the targeted container")
+                return nil
+            }
             return FinderInvocation(kind: .background, items: [], targetDirectory: target.path)
         case .sidebar:
-            guard let target = controller.targetedURL(), target.isFileURL else { return nil }
+            guard let target = controller.targetedURL(), target.isFileURL else {
+                Self.logger.error("Finder supplied no file URL for the targeted sidebar item")
+                return nil
+            }
             return FinderInvocation(kind: .sidebar, items: [Self.finderItem(target)], targetDirectory: target.deletingLastPathComponent().path)
         }
     }
@@ -170,8 +222,25 @@ final class FinderSyncExtension: FIFinderSync {
         )
     }
 
-    private func loadSnapshot() -> ActionSnapshot? {
-        ActionCatalogLoader().load(from: FinderActionConstants.configRoot)
+    private func loadSnapshot() -> ActionSnapshot {
+        let snapshot = ActionCatalogLoader().load(from: FinderActionConstants.configRoot)
+        Self.logger.notice(
+            "Loaded catalog root=\(snapshot.configRoot, privacy: .public) activeActions=\(snapshot.actions.count, privacy: .public) diagnostics=\(snapshot.diagnostics.count, privacy: .public)"
+        )
+        for diagnostic in snapshot.diagnostics {
+            let line = diagnostic.line ?? 0
+            switch diagnostic.severity {
+            case .error:
+                Self.logger.error(
+                    "Catalog diagnostic file=\(diagnostic.file, privacy: .public) line=\(line, privacy: .public) message=\(diagnostic.message, privacy: .public)"
+                )
+            case .warning:
+                Self.logger.warning(
+                    "Catalog diagnostic file=\(diagnostic.file, privacy: .public) line=\(line, privacy: .public) message=\(diagnostic.message, privacy: .public)"
+                )
+            }
+        }
+        return snapshot
     }
 
 }

@@ -7,14 +7,47 @@ public enum FinderActionConstants {
     public static let runDirectoryName = "runs"
     public static let legacyLaunchAgentPlistName = "com.finderactions.runner.plist"
 
-    public static var configRoot: URL {
-        FileManager.default.homeDirectoryForCurrentUser
+    /// The macOS account home, rather than the calling process's sandbox home.
+    /// Finder Sync runs in an app container, but its configuration is shared with
+    /// the host app under the user's real home directory.
+    static var accountHomeDirectory: URL {
+        resolvedAccountHomeDirectory(
+            processHomeDirectory: FileManager.default.homeDirectoryForCurrentUser
+        )
+    }
+
+    static func resolvedAccountHomeDirectory(
+        processHomeDirectory: URL
+    ) -> URL {
+        let processHomeDirectory = processHomeDirectory.standardizedFileURL
+        guard processHomeDirectory.lastPathComponent == "Data" else {
+            return processHomeDirectory
+        }
+
+        let containerDirectory = processHomeDirectory.deletingLastPathComponent()
+        let containersDirectory = containerDirectory.deletingLastPathComponent()
+        let libraryDirectory = containersDirectory.deletingLastPathComponent()
+        guard !containerDirectory.lastPathComponent.isEmpty,
+              containersDirectory.lastPathComponent == "Containers",
+              libraryDirectory.lastPathComponent == "Library" else {
+            return processHomeDirectory
+        }
+
+        return libraryDirectory.deletingLastPathComponent().standardizedFileURL
+    }
+
+    static func configRoot(processHomeDirectory: URL) -> URL {
+        resolvedAccountHomeDirectory(processHomeDirectory: processHomeDirectory)
             .appendingPathComponent(".config", isDirectory: true)
             .appendingPathComponent(configDirectoryName, isDirectory: true)
     }
 
+    public static var configRoot: URL {
+        configRoot(processHomeDirectory: FileManager.default.homeDirectoryForCurrentUser)
+    }
+
     public static var runLogDirectory: URL {
-        FileManager.default.homeDirectoryForCurrentUser
+        accountHomeDirectory
             .appendingPathComponent("Library", isDirectory: true)
             .appendingPathComponent("Application Support", isDirectory: true)
             .appendingPathComponent("Finder Actions", isDirectory: true)
@@ -22,7 +55,7 @@ public enum FinderActionConstants {
     }
 
     public static func launchAgentPlistURL(serviceName: String) -> URL {
-        FileManager.default.homeDirectoryForCurrentUser
+        accountHomeDirectory
             .appendingPathComponent("Library", isDirectory: true)
             .appendingPathComponent("LaunchAgents", isDirectory: true)
             .appendingPathComponent("\(serviceName).plist", isDirectory: false)

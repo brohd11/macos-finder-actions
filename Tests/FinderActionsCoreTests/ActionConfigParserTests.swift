@@ -2,6 +2,29 @@ import Foundation
 import XCTest
 @testable import FinderActionsCore
 
+final class FinderActionConstantsTests: XCTestCase {
+    func testConfigRootEscapesSandboxProcessHome() {
+        let sandboxHome = URL(
+            fileURLWithPath: "/Users/example/Library/Containers/com.example.FinderSync/Data",
+            isDirectory: true
+        )
+
+        XCTAssertEqual(
+            FinderActionConstants.configRoot(processHomeDirectory: sandboxHome),
+            URL(fileURLWithPath: "/Users/example/.config/finder-actions", isDirectory: true)
+        )
+    }
+
+    func testConfigRootUsesOrdinaryProcessHomeUnchanged() {
+        let processHome = URL(fileURLWithPath: "/Users/example", isDirectory: true)
+
+        XCTAssertEqual(
+            FinderActionConstants.configRoot(processHomeDirectory: processHome),
+            URL(fileURLWithPath: "/Users/example/.config/finder-actions", isDirectory: true)
+        )
+    }
+}
+
 final class ActionConfigParserTests: XCTestCase {
     func testParsesCompleteAction() throws {
         let source = """
