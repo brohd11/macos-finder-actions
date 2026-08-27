@@ -1,14 +1,20 @@
 MACOSX_DEPLOYMENT_TARGET = 13.0
 SWIFT_VERSION = 6.0
 SWIFT_STRICT_CONCURRENCY = complete
-CODE_SIGN_STYLE = Automatic
 ENABLE_HARDENED_RUNTIME = YES
 ENABLE_USER_SCRIPT_SANDBOXING = NO
 
-// Override these in the ignored Local.xcconfig before running the app.
+// Releases are ad-hoc signed, so no Apple development team is required to build.
+// Override these in the ignored Local.xcconfig if you do have one.
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -
 DEVELOPMENT_TEAM =
-BUNDLE_ID_PREFIX = com.example
+
+BUNDLE_ID_PREFIX = com.brohd
 MACH_SERVICE_NAME = $(BUNDLE_ID_PREFIX).FinderActions.runner
-LEGACY_MACH_SERVICE_NAME = group.$(BUNDLE_ID_PREFIX).FinderActions.runner
+
+// Overridden by scripts/package.sh for release builds.
+MARKETING_VERSION = 0.0.0
+CURRENT_PROJECT_VERSION = 0
 
 #include? "Local.xcconfig"

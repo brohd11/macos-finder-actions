@@ -4,3 +4,5 @@ DerivedData/
 Config/Local.xcconfig
 xcuserdata/
 *.xcuserstate
+.swiftpm/
+dist/

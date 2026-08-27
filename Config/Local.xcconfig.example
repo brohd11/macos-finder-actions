@@ -1,3 +1,6 @@
-// Copy this file to Local.xcconfig and use a reverse-DNS prefix you control.
+// Optional. Copy this file to Local.xcconfig only if you have an Apple development
+// team and want Xcode to sign locally with it instead of ad-hoc.
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = Apple Development
 DEVELOPMENT_TEAM = ABCDE12345
 BUNDLE_ID_PREFIX = com.yourname

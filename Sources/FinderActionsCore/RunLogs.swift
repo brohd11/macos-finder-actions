@@ -116,6 +116,25 @@ public final class RunLogStore: @unchecked Sendable {
         return record
     }
 
+    /// Cheap change check so callers can skip decoding when nothing has changed.
+    public func fingerprint() -> String {
+        queue.sync {
+            let files = (try? FileManager.default.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey],
+                options: [.skipsHiddenFiles]
+            )) ?? []
+            return files
+                .filter { $0.pathExtension == "json" }
+                .sorted { $0.path < $1.path }
+                .map { url in
+                    let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+                    return "\(url.lastPathComponent)|\(values?.contentModificationDate?.timeIntervalSince1970 ?? 0)|\(values?.fileSize ?? 0)"
+                }
+                .joined(separator: "\n")
+        }
+    }
+
     public func loadAll() -> [RunRecord] {
         queue.sync {
             let files = (try? FileManager.default.contentsOfDirectory(

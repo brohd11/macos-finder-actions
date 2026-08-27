@@ -2,11 +2,9 @@ import AppKit
 import Combine
 import FinderActionsCore
 import FinderSync
-import ServiceManagement
 
 enum RunnerRegistrationState: Equatable {
     case checking
-    case migrating
     case enabling
     case enabled
     case needsRepair(String)
@@ -34,25 +32,19 @@ final class AppState: ObservableObject {
     @Published private(set) var notificationAuthorizationInFlight = false
     @Published private(set) var runnerControlInFlight = false
 
-    private let legacyRunnerService = SMAppService.agent(
-        plistName: FinderActionConstants.legacyLaunchAgentPlistName
-    )
     private let runnerClient: RunnerClient?
     private let launchAgentManager: LaunchAgentManager?
     private let runnerBuildIdentifier: String
     private let settingsStore = FinderActionsSettingsStore()
-    private var timer: Timer?
-    private var runnerInitializationComplete = false
-    private var runnerRegistrationRefreshInFlight = false
-    private var lastRunnerRegistrationRefresh = Date.distantPast
-    private var lastRunnerHealthRefresh = Date.distantPast
-    private var lastNotificationRefresh = Date.distantPast
-    private var runnerHealthRefreshInFlight = false
-    private var notificationRefreshInFlight = false
-    private var snapshotRefreshInFlight = false
-    private var lastSnapshotRefresh = Date.distantPast
+    private let logStore = RunLogStore(directory: FinderActionConstants.runLogDirectory)
+    private var pollTask: Task<Void, Never>?
+    private var runsFingerprint: String?
 
     private static let activeRunnerBuildKey = "ActiveLaunchAgentRunnerBuild"
+
+    /// The catalog and notification status are refreshed on a slower cadence than
+    /// the once-per-second poll tick.
+    private static let slowTickInterval = 5
 
     var extensionEnabled: Bool { FIFinderSyncController.isExtensionEnabled }
     var selectedRun: RunRecord? { runs.first { $0.id == selectedRunID } }
@@ -65,14 +57,13 @@ final class AppState: ObservableObject {
     }
     var runnerAvailable: Bool { runnerRegistered && runnerHealth == .available }
     var runnerControlDisabled: Bool {
-        runnerControlInFlight || launchAgentManager == nil || runnerRegistration == .checking ||
-            runnerRegistration == .migrating || runnerRegistration == .enabling
+        runnerControlInFlight || launchAgentManager == nil ||
+            runnerRegistration == .checking || runnerRegistration == .enabling
     }
 
     var runnerStatus: String {
         switch runnerRegistration {
         case .checking: "Checking…"
-        case .migrating: "Migrating…"
         case .enabling: "Starting…"
         case .enabled:
             switch runnerHealth {
@@ -92,7 +83,7 @@ final class AppState: ObservableObject {
         case .enabled where runnerHealth == .unavailable: "Repair"
         case .enabled: "Disable"
         case .needsRepair: "Repair"
-        case .checking, .migrating, .enabling: "Working…"
+        case .checking, .enabling: "Working…"
         case .notRegistered, .unknown: "Enable"
         }
     }
@@ -110,13 +101,8 @@ final class AppState: ObservableObject {
         let serviceName = RuntimeConfiguration.machServiceName()
         runnerClient = serviceName.map(RunnerClient.init(machServiceName:))
         let runnerExecutable = Bundle.main.bundleURL
-            .appendingPathComponent("Contents", isDirectory: true)
-            .appendingPathComponent("Library", isDirectory: true)
-            .appendingPathComponent("LoginItems", isDirectory: true)
-            .appendingPathComponent("FinderActionsRunner.app", isDirectory: true)
-            .appendingPathComponent("Contents", isDirectory: true)
-            .appendingPathComponent("MacOS", isDirectory: true)
-            .appendingPathComponent("FinderActionsRunner", isDirectory: false)
+            .appendingPathComponent("Contents/Library/LoginItems/FinderActionsRunner.app", isDirectory: true)
+            .appendingPathComponent("Contents/MacOS/FinderActionsRunner", isDirectory: false)
         if let serviceName {
             launchAgentManager = LaunchAgentManager(configuration: LaunchAgentConfiguration(
                 serviceName: serviceName,
@@ -137,23 +123,149 @@ final class AppState: ObservableObject {
         if !usesCustomConfigDirectory {
             try? FileManager.default.createDirectory(at: configRoot, withIntermediateDirectories: true)
         }
-        refresh()
-        Task { [weak self] in await self?.initializeRunnerRegistration() }
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.refresh() }
+        startPolling()
+    }
+
+    deinit {
+        pollTask?.cancel()
+    }
+
+    // MARK: - Polling
+
+    /// One serial loop. Because each tick is a single `await` chain on the main
+    /// actor it cannot overlap itself, so no in-flight flags or debounce
+    /// timestamps are needed.
+    private func startPolling() {
+        pollTask = Task { [weak self] in
+            await self?.reconcileRunnerRegistration(allowAutomaticRepair: true)
+            var tick = 0
+            while !Task.isCancelled {
+                await self?.poll(tick: tick)
+                tick &+= 1
+                try? await Task.sleep(for: .seconds(1))
+            }
         }
     }
 
-    func refresh() {
-        refreshRunnerRegistration()
-        runs = RunLogStore(directory: FinderActionConstants.runLogDirectory).loadAll()
+    private func poll(tick: Int) async {
+        let slowTick = tick % Self.slowTickInterval == 0
+        if slowTick, !runnerControlInFlight {
+            await reconcileRunnerRegistration(allowAutomaticRepair: false)
+        }
+        await refreshCatalog()
+        await refreshRuns()
+        if slowTick { await refreshNotificationStatus() }
+    }
+
+    /// A single catalog round-trip serves as both the health probe and the
+    /// snapshot refresh.
+    private func refreshCatalog() async {
+        guard runnerRegistered, let runnerClient else {
+            snapshot = nil
+            return
+        }
+        do {
+            let snapshot = try await runnerClient.catalogSnapshot()
+            guard runnerRegistered else { return }
+            runnerHealth = .available
+            applyRunnerSnapshot(snapshot)
+        } catch {
+            guard runnerRegistered else { return }
+            markRunnerUnavailable()
+        }
+    }
+
+    /// Stats the run directory off the main actor and decodes only when the
+    /// records have actually changed.
+    private func refreshRuns() async {
+        let store = logStore
+        let previous = runsFingerprint
+        let update = await Task.detached { () -> (fingerprint: String, records: [RunRecord])? in
+            let fingerprint = store.fingerprint()
+            guard fingerprint != previous else { return nil }
+            return (fingerprint, store.loadAll())
+        }.value
+
+        guard let update else { return }
+        runsFingerprint = update.fingerprint
+        runs = update.records
         if let selectedRunID, !runs.contains(where: { $0.id == selectedRunID }) {
             self.selectedRunID = nil
         }
+    }
 
-        refreshRunnerHealth()
-        refreshSnapshot()
-        refreshNotificationStatus()
+    private func refreshNotificationStatus() async {
+        guard runnerRegistered else {
+            notificationStatus = runnerConfigured ? "Runner unavailable" : "Runner required"
+            return
+        }
+        guard runnerHealth == .available, let runnerClient else {
+            notificationStatus = runnerHealth == .checking ? "Checking…" : "Runner unavailable"
+            return
+        }
+        guard !notificationAuthorizationInFlight else { return }
+        do {
+            let value = try await runnerClient.notificationStatus()
+            guard runnerAvailable else { return }
+            notificationStatus = value
+        } catch {
+            guard runnerAvailable else { return }
+            notificationStatus = "Unavailable"
+        }
+    }
+
+    // MARK: - Runner registration
+
+    private func reconcileRunnerRegistration(allowAutomaticRepair: Bool) async {
+        guard let launchAgentManager else {
+            runnerRegistration = .unknown
+            return
+        }
+        var registration = await launchAgentManager.registration()
+        let activeBuild = UserDefaults.standard.string(forKey: Self.activeRunnerBuildKey)
+        let buildChanged = registration == .loaded && activeBuild != runnerBuildIdentifier
+        var protocolChanged = false
+        if allowAutomaticRepair, registration == .loaded, !buildChanged, let runnerClient {
+            do {
+                _ = try await runnerClient.catalogSnapshot()
+            } catch {
+                protocolChanged = true
+            }
+        }
+        let shouldRepair = allowAutomaticRepair && {
+            if case .needsRepair = registration { return true }
+            return buildChanged || protocolChanged
+        }()
+
+        if shouldRepair {
+            runnerRegistration = .enabling
+            do {
+                try await launchAgentManager.enable()
+                recordActiveRunnerBuild()
+                registration = .loaded
+                errorMessage = nil
+            } catch {
+                registration = await launchAgentManager.registration()
+                errorMessage = "The background runner could not be repaired: \(error.localizedDescription)"
+            }
+        }
+        applyRegistration(registration)
+        if registration == .loaded {
+            if activeBuild == nil { recordActiveRunnerBuild() }
+            await refreshCatalog()
+        }
+    }
+
+    private func applyRegistration(_ registration: LaunchAgentRegistration) {
+        let next: RunnerRegistrationState
+        switch registration {
+        case .disabled: next = .notRegistered
+        case .loaded: next = .enabled
+        case .needsRepair(let reason): next = .needsRepair(reason)
+        }
+        guard next != runnerRegistration else { return }
+        runnerRegistration = next
+        runnerHealth = next == .enabled ? .checking : .unavailable
     }
 
     func controlRunner() {
@@ -181,7 +293,7 @@ final class AppState: ObservableObject {
                 self.recordActiveRunnerBuild()
                 self.applyRegistration(.loaded)
                 self.errorMessage = nil
-                self.forceRunnerHealthRefresh()
+                await self.refreshCatalog()
             } catch {
                 self.applyRegistration(await launchAgentManager.registration())
                 self.errorMessage = error.localizedDescription
@@ -207,6 +319,8 @@ final class AppState: ObservableObject {
         }
     }
 
+    // MARK: - Commands
+
     func manageFinderExtension() {
         FIFinderSyncController.showExtensionManagementInterface()
     }
@@ -226,8 +340,7 @@ final class AppState: ObservableObject {
                 self.errorMessage = error.localizedDescription
             }
             self.notificationAuthorizationInFlight = false
-            self.lastNotificationRefresh = .distantPast
-            self.refreshNotificationStatus()
+            await self.refreshNotificationStatus()
         }
     }
 
@@ -280,32 +393,23 @@ final class AppState: ObservableObject {
         configRoot = selection.url
         usesCustomConfigDirectory = selection.isCustom
         snapshot = nil
-        lastSnapshotRefresh = .distantPast
-        guard runnerRegistered, let runnerClient else { return }
-
-        Task { [weak self] in
-            guard let self else { return }
-            do {
-                let reply = try await runnerClient.reload()
-                self.errorMessage = reply.accepted ? nil : reply.message
-                self.lastSnapshotRefresh = .distantPast
-                self.refreshSnapshot()
-            } catch {
-                self.markRunnerUnavailable()
-                self.errorMessage = error.localizedDescription
-            }
-        }
+        guard runnerRegistered, runnerClient != nil else { return }
+        reloadRunnerConfiguration()
     }
 
     func reloadConfiguration() {
-        guard requireRunner(), let runnerClient else { return }
+        guard requireRunner() else { return }
+        reloadRunnerConfiguration()
+    }
+
+    private func reloadRunnerConfiguration() {
+        guard let runnerClient else { return }
         Task { [weak self] in
             guard let self else { return }
             do {
                 let reply = try await runnerClient.reload()
                 self.errorMessage = reply.accepted ? nil : reply.message
-                self.lastSnapshotRefresh = .distantPast
-                self.refresh()
+                await self.refreshCatalog()
             } catch {
                 self.markRunnerUnavailable()
                 self.errorMessage = error.localizedDescription
@@ -313,225 +417,37 @@ final class AppState: ObservableObject {
         }
     }
 
-    private func initializeRunnerRegistration() async {
-        guard let launchAgentManager else {
-            runnerRegistration = .unknown
-            runnerInitializationComplete = true
-            return
-        }
-
-        let legacyStatus = legacyRunnerService.status
-        let shouldMigrate = legacyStatus == .enabled
-        if shouldMigrate {
-            runnerRegistration = .migrating
-            runnerControlInFlight = true
-            do {
-                try await launchAgentManager.prepare()
-                var legacyCleanupError: (any Error)?
-                do {
-                    try await unregisterLegacyRunner()
-                } catch {
-                    legacyCleanupError = error
-                }
-                try await launchAgentManager.activatePrepared()
-                recordActiveRunnerBuild()
-                if let legacyCleanupError {
-                    errorMessage = "The new runner is enabled, but the previous registration could not be removed: \(legacyCleanupError.localizedDescription)"
-                } else {
-                    errorMessage = nil
-                }
-            } catch {
-                errorMessage = "The previous runner could not be migrated: \(error.localizedDescription)"
-            }
-            runnerControlInFlight = false
-        } else if legacyStatus == .requiresApproval {
-            do {
-                try await unregisterLegacyRunner()
-            } catch {
-                errorMessage = "The previous runner registration could not be removed: \(error.localizedDescription)"
-            }
-        }
-
-        runnerInitializationComplete = true
-        await reconcileRunnerRegistration(allowAutomaticRepair: true)
+    func copyExample() {
+        let example = """
+        [Finder Action]
+        Name=Copy Path
+        Exec=printf '%s' "$1" | pbcopy
+        Selection=single
+        Extensions=any;
+        Group=Utilities/Clipboard
+        Order=100
+        Icon=doc.on.clipboard
+        """
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(example, forType: .string)
     }
 
-    private func unregisterLegacyRunner() async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
-            // Using the completion-handler overload keeps the non-Sendable
-            // SMAppService on the main actor when compiling with Swift 6.1.
-            legacyRunnerService.unregister { error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
-                }
-            }
+    func clearLogs() {
+        do {
+            try logStore.clear()
+            selectedRunID = nil
+            runsFingerprint = nil
+            Task { await refreshRuns() }
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
-    private func refreshRunnerRegistration() {
-        guard runnerInitializationComplete, !runnerRegistrationRefreshInFlight, !runnerControlInFlight else { return }
-        guard Date().timeIntervalSince(lastRunnerRegistrationRefresh) >= 5 else { return }
-        lastRunnerRegistrationRefresh = Date()
-        runnerRegistrationRefreshInFlight = true
-        Task { [weak self] in
-            guard let self else { return }
-            await self.reconcileRunnerRegistration(allowAutomaticRepair: false)
-            self.runnerRegistrationRefreshInFlight = false
-        }
-    }
-
-    private func reconcileRunnerRegistration(allowAutomaticRepair: Bool) async {
-        guard let launchAgentManager else {
-            runnerRegistration = .unknown
-            return
-        }
-        var registration = await launchAgentManager.registration()
-        let activeBuild = UserDefaults.standard.string(forKey: Self.activeRunnerBuildKey)
-        let buildChanged = registration == .loaded && activeBuild != runnerBuildIdentifier
-        var protocolChanged = false
-        if allowAutomaticRepair, registration == .loaded, !buildChanged, let runnerClient {
-            do {
-                _ = try await runnerClient.catalogSnapshot()
-            } catch {
-                protocolChanged = true
-            }
-        }
-        let shouldRepair = allowAutomaticRepair && {
-            if case .needsRepair = registration { return true }
-            return buildChanged || protocolChanged
-        }()
-
-        if shouldRepair {
-            runnerRegistration = .enabling
-            do {
-                try await launchAgentManager.enable()
-                recordActiveRunnerBuild()
-                registration = .loaded
-                errorMessage = nil
-            } catch {
-                registration = await launchAgentManager.registration()
-                errorMessage = "The background runner could not be repaired: \(error.localizedDescription)"
-            }
-        }
-        applyRegistration(registration)
-        if registration == .loaded {
-            if activeBuild == nil {
-                recordActiveRunnerBuild()
-            }
-            forceRunnerHealthRefresh()
-        }
-    }
-
-    private func applyRegistration(_ registration: LaunchAgentRegistration) {
-        let next: RunnerRegistrationState
-        switch registration {
-        case .disabled: next = .notRegistered
-        case .loaded: next = .enabled
-        case .needsRepair(let reason): next = .needsRepair(reason)
-        }
-        guard next != runnerRegistration else { return }
-        runnerRegistration = next
-        runnerHealth = next == .enabled ? .checking : .unavailable
-        lastRunnerHealthRefresh = .distantPast
-        lastNotificationRefresh = .distantPast
-    }
-
-    private func forceRunnerHealthRefresh() {
-        lastRunnerHealthRefresh = .distantPast
-        refreshRunnerHealth()
-    }
-
-    private func refreshRunnerHealth() {
-        guard runnerRegistered else { return }
-        guard let runnerClient else {
-            markRunnerUnavailable()
-            return
-        }
-        guard !runnerHealthRefreshInFlight else { return }
-        guard Date().timeIntervalSince(lastRunnerHealthRefresh) >= 5 else { return }
-        lastRunnerHealthRefresh = Date()
-        runnerHealthRefreshInFlight = true
-
-        Task { [weak self] in
-            guard let self else { return }
-            defer { self.runnerHealthRefreshInFlight = false }
-            do {
-                let snapshot = try await runnerClient.catalogSnapshot()
-                guard self.runnerRegistered else { return }
-                self.runnerHealth = .available
-                self.applyRunnerSnapshot(snapshot)
-            } catch {
-                guard self.runnerRegistered else { return }
-                self.markRunnerUnavailable()
-            }
-            self.refreshNotificationStatus()
-        }
-    }
-
-    private func refreshSnapshot() {
-        guard runnerRegistered, let runnerClient else {
-            snapshot = nil
-            return
-        }
-        guard runnerHealth != .unavailable else {
-            snapshot = nil
-            return
-        }
-        guard !snapshotRefreshInFlight else { return }
-        guard Date().timeIntervalSince(lastSnapshotRefresh) >= 1 else { return }
-        lastSnapshotRefresh = Date()
-        snapshotRefreshInFlight = true
-
-        Task { [weak self] in
-            guard let self else { return }
-            defer { self.snapshotRefreshInFlight = false }
-            do {
-                let snapshot = try await runnerClient.catalogSnapshot()
-                guard self.runnerRegistered else { return }
-                self.applyRunnerSnapshot(snapshot)
-            } catch {
-                guard self.runnerRegistered else { return }
-                self.markRunnerUnavailable()
-            }
-        }
-    }
+    // MARK: - Helpers
 
     private func applyRunnerSnapshot(_ snapshot: ActionSnapshot) {
         self.snapshot = snapshot
         configRoot = URL(fileURLWithPath: snapshot.configRoot, isDirectory: true)
-    }
-
-    private func refreshNotificationStatus() {
-        guard runnerRegistered else {
-            notificationStatus = runnerConfigured ? "Runner unavailable" : "Runner required"
-            return
-        }
-        guard runnerHealth == .available else {
-            notificationStatus = runnerHealth == .checking ? "Checking…" : "Runner unavailable"
-            return
-        }
-        guard !notificationAuthorizationInFlight, !notificationRefreshInFlight else { return }
-        guard Date().timeIntervalSince(lastNotificationRefresh) >= 5 else { return }
-        lastNotificationRefresh = Date()
-        guard let runnerClient else {
-            notificationStatus = "Runner unavailable"
-            return
-        }
-        notificationRefreshInFlight = true
-        Task { [weak self] in
-            guard let self else { return }
-            defer { self.notificationRefreshInFlight = false }
-            do {
-                let value = try await runnerClient.notificationStatus()
-                guard self.runnerAvailable else { return }
-                self.notificationStatus = value
-            } catch {
-                guard self.runnerAvailable else { return }
-                self.notificationStatus = "Unavailable"
-            }
-        }
     }
 
     private func markRunnerUnavailable() {
@@ -570,30 +486,5 @@ final class AppState: ObservableObject {
         let modified = values?.contentModificationDate?.timeIntervalSince1970 ?? 0
         let size = values?.fileSize ?? 0
         return "\(version)-\(build)-\(size)-\(modified)"
-    }
-
-    func copyExample() {
-        let example = """
-        [Finder Action]
-        Name=Copy Path
-        Exec=printf '%s' "$1" | pbcopy
-        Selection=single
-        Extensions=any;
-        Group=Utilities/Clipboard
-        Order=100
-        Icon=doc.on.clipboard
-        """
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(example, forType: .string)
-    }
-
-    func clearLogs() {
-        do {
-            try RunLogStore(directory: FinderActionConstants.runLogDirectory).clear()
-            selectedRunID = nil
-            refresh()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
     }
 }

@@ -107,9 +107,9 @@ For a background action, use `Selection=none`; it receives no positional paths a
 `$FINDER_ACTION_DIRECTORY`. `Selection=any` makes the same action available both with a
 selection and on the folder background.
 
-See [`Examples`](Examples) for copy-path and new-file configurations. Existing scripts
-from `../macos-quick-actions/` can be called unchanged from an `Exec` line; their old guard
-blocks become redundant because Finder Actions filters the menu before launch.
+See [`Examples`](Examples) for copy-path and new-file configurations. Existing shell
+scripts can be called unchanged from an `Exec` line; any guard blocks they carry become
+redundant because Finder Actions filters the menu before launch.
 
 
 ## Platform caveats
@@ -124,28 +124,36 @@ whether their URLs belong to a monitored location.
 
 - macOS 13 or newer
 - Full Xcode (Command Line Tools alone cannot package a Finder extension)
-- An Apple development team selected for local code signing
 
-Set up signing once:
+No Apple developer account is needed. Builds are ad-hoc signed by default, exactly
+like the published release:
 
 ```sh
-cp Config/Local.xcconfig.example Config/Local.xcconfig
+./build.sh
 ```
 
-**Note:** `Config/Local.xcconfig` is gitignored.
+That produces `dist/Finder-Actions.zip` and its checksum, running the same
+`scripts/package.sh` the release workflow uses — so a local build is verified the same
+way CI verifies a release (universal binaries, bundle identifiers, ad-hoc signature,
+no provisioning profile, sandbox entitlements). Pass an explicit version and build
+number if you want them: `./build.sh 0.2.0 12`.
 
-Edit `Config/Local.xcconfig` with your team ID and a unique reverse-DNS prefix, then:
+To work in Xcode instead:
 
-1. Open `FinderActions.xcodeproj` in Xcode.
-2. Select the **FinderActions** scheme and run it.
-3. In the dashboard, enable the background runner.
-4. Choose **Manage** beside Finder extension and enable Finder Actions in System Settings.
-5. Allow failure notifications if desired.
-6. Put one or more `.finder-action` files below `~/.config/finder-actions/`, or use
+1. Open `FinderActions.xcodeproj` and run the **FinderActions** scheme.
+2. In the dashboard, enable the background runner.
+3. Choose **Manage** beside Finder extension and enable Finder Actions in System Settings.
+4. Allow failure notifications if desired.
+5. Put one or more `.finder-action` files below `~/.config/finder-actions/`, or use
    **Choose…** in the Actions tab to select another configuration directory.
 
+`swift test` runs the shared-core test suite without Xcode.
+
 The bundle identifiers and background runner Mach service are derived from
-`BUNDLE_ID_PREFIX`; no App Group or provisioning profile is required.
+`BUNDLE_ID_PREFIX`; no App Group or provisioning profile is required. If you do have
+an Apple development team and want Xcode to sign with it, copy
+`Config/Local.xcconfig.example` to `Config/Local.xcconfig` (gitignored) and set your
+team ID and reverse-DNS prefix there.
 
 The background runner owns the action catalog and shares parsed snapshots with the app and
 Finder extension. Custom configuration directories therefore do not require symlinks or

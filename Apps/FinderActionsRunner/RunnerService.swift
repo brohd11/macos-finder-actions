@@ -39,9 +39,9 @@ final class RunnerService: NSObject, NSXPCListenerDelegate, RunnerXPCProtocol {
     }
 
     func run(_ request: RunRequest, withReply reply: @escaping (RunReply) -> Void) {
-        // Reload before execution so validation uses the latest on-disk contents,
-        // even if the watcher has not observed a very recent edit yet.
-        catalog.reload()
+        // Re-check on-disk contents before execution in case the watcher has not
+        // yet observed a very recent edit. Cheap when nothing changed.
+        catalog.reloadIfChanged()
         guard let action = catalog.action(id: request.actionID) else {
             reply(rejectedReply(request, action: nil, message: "Action no longer exists."))
             return
@@ -71,22 +71,22 @@ final class RunnerService: NSObject, NSXPCListenerDelegate, RunnerXPCProtocol {
             return
         }
 
-        let runID = executor.enqueue(
+        executor.enqueue(
             action: action,
             request: ExecutionRequest(selectedPaths: request.selectedPaths, targetDirectory: request.targetDirectory)
         )
-        reply(RunReply(accepted: true, message: "Action queued.", runID: runID.uuidString))
+        reply(RunReply(accepted: true, message: "Action queued."))
     }
 
     private func rejectedReply(_ request: RunRequest, action: FinderAction?, message: String) -> RunReply {
-        let record = try? logStore.saveRejected(
+        _ = try? logStore.saveRejected(
             actionID: request.actionID,
             actionName: action?.name ?? request.actionID,
             selectedPaths: request.selectedPaths,
             targetDirectory: request.targetDirectory,
             message: message
         )
-        return RunReply(accepted: false, message: message, runID: record?.id.uuidString)
+        return RunReply(accepted: false, message: message)
     }
 
     func reload(withReply reply: @escaping (RunReply) -> Void) {
@@ -99,10 +99,6 @@ final class RunnerService: NSObject, NSXPCListenerDelegate, RunnerXPCProtocol {
         } catch {
             reply(CatalogSnapshotReply(snapshotData: nil, message: error.localizedDescription))
         }
-    }
-
-    func ping(withReply reply: @escaping (RunReply) -> Void) {
-        reply(RunReply(accepted: true, message: "Runner is available."))
     }
 
     func notificationStatus(withReply reply: @escaping (String) -> Void) {

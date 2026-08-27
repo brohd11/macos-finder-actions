@@ -1,20 +1,19 @@
 import Foundation
-import FinderActionsCore
 
-struct MenuActionPayload: Equatable, Sendable {
-    let actionID: String
-    let selectedPaths: [String]
-    let targetDirectory: String
-    let invocationKind: InvocationKind
+public struct MenuActionPayload: Equatable, Sendable {
+    public let actionID: String
+    public let selectedPaths: [String]
+    public let targetDirectory: String
+    public let invocationKind: InvocationKind
 
-    init(actionID: String, invocation: FinderInvocation) {
+    public init(actionID: String, invocation: FinderInvocation) {
         self.actionID = actionID
         self.selectedPaths = invocation.items.map(\.path)
         self.targetDirectory = invocation.targetDirectory
         self.invocationKind = invocation.kind
     }
 
-    var runRequest: RunRequest {
+    public var runRequest: RunRequest {
         RunRequest(
             actionID: actionID,
             selectedPaths: selectedPaths,
@@ -22,11 +21,10 @@ struct MenuActionPayload: Equatable, Sendable {
             invocationKind: invocationKind
         )
     }
-
 }
 
-final class MenuActionRegistry: @unchecked Sendable {
-    static let shared = MenuActionRegistry()
+public final class MenuActionRegistry: @unchecked Sendable {
+    public static let shared = MenuActionRegistry()
 
     private let maximumEntries: Int
     private let lock = NSLock()
@@ -34,11 +32,11 @@ final class MenuActionRegistry: @unchecked Sendable {
     private var payloads: [Int: MenuActionPayload] = [:]
     private var insertionOrder: [Int] = []
 
-    init(maximumEntries: Int = 2_048) {
+    public init(maximumEntries: Int = 2_048) {
         self.maximumEntries = max(1, maximumEntries)
     }
 
-    func register(_ payload: MenuActionPayload) -> Int {
+    public func register(_ payload: MenuActionPayload) -> Int {
         lock.lock()
         defer { lock.unlock() }
 
@@ -52,7 +50,7 @@ final class MenuActionRegistry: @unchecked Sendable {
         return tag
     }
 
-    func take(tag: Int) -> MenuActionPayload? {
+    public func take(tag: Int) -> MenuActionPayload? {
         lock.lock()
         defer { lock.unlock() }
         guard let payload = payloads.removeValue(forKey: tag) else { return nil }

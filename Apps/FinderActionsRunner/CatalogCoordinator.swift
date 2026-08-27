@@ -48,32 +48,40 @@ final class CatalogCoordinator: @unchecked Sendable {
     }
 
     func reload() {
-        let configuration = lock.withLock {
-            (root: configRoot, error: configurationError, generation: generation)
-        }
-        let loaded: ActionSnapshot
+        let configuration = currentConfiguration()
+        let loaded: LoadedCatalog
         if let error = configuration.error {
-            loaded = ActionSnapshot(
-                configRoot: configuration.root.path,
-                actions: [],
-                diagnostics: [ActionDiagnostic(
-                    severity: .error,
-                    file: FinderActionConstants.settingsURL.path,
-                    message: error
-                )]
+            loaded = LoadedCatalog(
+                snapshot: ActionSnapshot(
+                    configRoot: configuration.root.path,
+                    actions: [],
+                    diagnostics: [ActionDiagnostic(
+                        severity: .error,
+                        file: FinderActionConstants.settingsURL.path,
+                        message: error
+                    )]
+                ),
+                fingerprint: settingsErrorFingerprint(error)
             )
         } else {
             loaded = loader.load(from: configuration.root)
         }
-        let fingerprint = currentFingerprint(
-            at: configuration.root,
-            configurationError: configuration.error
-        )
         lock.withLock {
             guard generation == configuration.generation else { return }
-            snapshot = loaded
-            self.fingerprint = fingerprint
+            snapshot = loaded.snapshot
+            fingerprint = loaded.fingerprint
         }
+    }
+
+    /// Reloads only when the config directory's contents have actually changed.
+    func reloadIfChanged() {
+        let configuration = currentConfiguration()
+        let next = configuration.error.map(settingsErrorFingerprint)
+            ?? loader.fingerprint(of: configuration.root)
+        let changed = lock.withLock {
+            generation == configuration.generation && next != fingerprint
+        }
+        if changed { reload() }
     }
 
     func action(id: String) -> FinderAction? {
@@ -84,45 +92,11 @@ final class CatalogCoordinator: @unchecked Sendable {
         lock.withLock { snapshot }
     }
 
-    private func reloadIfChanged() {
-        let configuration = lock.withLock {
-            (root: configRoot, error: configurationError, generation: generation)
-        }
-        let next = currentFingerprint(
-            at: configuration.root,
-            configurationError: configuration.error
-        )
-        let changed = lock.withLock {
-            generation == configuration.generation && next != fingerprint
-        }
-        if changed { reload() }
+    private func currentConfiguration() -> (root: URL, error: String?, generation: Int) {
+        lock.withLock { (root: configRoot, error: configurationError, generation: generation) }
     }
 
-    private func currentFingerprint(at configRoot: URL, configurationError: String?) -> String {
-        if let configurationError {
-            return "settings-error|\(configurationError)"
-        }
-        guard let enumerator = FileManager.default.enumerator(
-            at: configRoot,
-            includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey],
-            options: [.skipsHiddenFiles]
-        ) else { return "missing" }
-
-        return (enumerator.allObjects as? [URL] ?? [])
-            .filter { $0.pathExtension == FinderActionConstants.configExtension }
-            .sorted { $0.path < $1.path }
-            .map { url in
-                let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
-                return "\(url.path)|\(values?.contentModificationDate?.timeIntervalSince1970 ?? 0)|\(values?.fileSize ?? 0)"
-            }
-            .joined(separator: "\n")
-    }
-}
-
-private extension NSLock {
-    func withLock<T>(_ body: () throws -> T) rethrows -> T {
-        lock()
-        defer { unlock() }
-        return try body()
+    private func settingsErrorFingerprint(_ error: String) -> String {
+        "settings-error|\(error)"
     }
 }

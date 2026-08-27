@@ -14,15 +14,14 @@
 		BC0000000000000000000006 /* RunLogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000006; };
 		BC0000000000000000000007 /* LaunchAgentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000007; };
 		BC0000000000000000000008 /* FinderActionsSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000008; };
+		BC0000000000000000000009 /* MenuActionPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000009; };
 		BA0000000000000000000001 /* FinderActionsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000001; };
 		BA0000000000000000000002 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000002; };
 		BA0000000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000003; };
 		BA0000000000000000000004 /* libFinderActionsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000001; };
 		BA0000000000000000000005 /* FinderSync.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000001; };
-		BA0000000000000000000006 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000002; };
 		BA0000000000000000000007 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000003; };
 		BE0000000000000000000001 /* FinderSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000001; };
-		BE0000000000000000000004 /* MenuActionPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000002; };
 		BE0000000000000000000002 /* libFinderActionsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000001; };
 		BE0000000000000000000003 /* FinderSync.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000001; };
 		BR0000000000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = R00000000000000000000001; };
@@ -36,8 +35,12 @@
 		BT0000000000000000000003 /* RunLogStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000003; };
 		BT0000000000000000000004 /* libFinderActionsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000001; };
 		BT0000000000000000000005 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000004; };
-		BT0000000000000000000006 /* MenuActionPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000002; };
 		BT0000000000000000000007 /* LaunchAgentManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000004; };
+		BT0000000000000000000008 /* ActionCatalogLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000005; };
+		BT0000000000000000000009 /* FinderActionsSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000006; };
+		BT0000000000000000000010 /* MenuActionPayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000007; };
+		BT0000000000000000000011 /* RunnerXPCTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000008; };
+		BT0000000000000000000012 /* ScriptInvocationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000009; };
 		CP0000000000000000000001 /* FinderActionsFinderSync.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000003; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
 		CP0000000000000000000002 /* FinderActionsRunner.app in Embed Login Items */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000004; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -64,12 +67,12 @@
 		C00000000000000000000005 /* RunnerXPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerXPC.swift; sourceTree = "<group>"; };
 		C00000000000000000000006 /* RunLogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunLogs.swift; sourceTree = "<group>"; };
 		C00000000000000000000007 /* LaunchAgentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentManager.swift; sourceTree = "<group>"; };
+		C00000000000000000000009 /* MenuActionPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuActionPayload.swift; sourceTree = "<group>"; };
 		C00000000000000000000008 /* FinderActionsSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderActionsSettings.swift; sourceTree = "<group>"; };
 		A00000000000000000000001 /* FinderActionsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderActionsApp.swift; sourceTree = "<group>"; };
 		A00000000000000000000002 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		A00000000000000000000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E00000000000000000000001 /* FinderSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderSync.swift; sourceTree = "<group>"; };
-		E00000000000000000000002 /* MenuActionPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuActionPayload.swift; sourceTree = "<group>"; };
 		R00000000000000000000001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		R00000000000000000000002 /* CatalogCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogCoordinator.swift; sourceTree = "<group>"; };
 		R00000000000000000000003 /* ScriptExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptExecutor.swift; sourceTree = "<group>"; };
@@ -78,15 +81,18 @@
 		T00000000000000000000002 /* ActionMatchingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionMatchingTests.swift; sourceTree = "<group>"; };
 		T00000000000000000000003 /* RunLogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunLogStoreTests.swift; sourceTree = "<group>"; };
 		T00000000000000000000004 /* LaunchAgentManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentManagerTests.swift; sourceTree = "<group>"; };
+		T00000000000000000000005 /* ActionCatalogLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionCatalogLoaderTests.swift; sourceTree = "<group>"; };
+		T00000000000000000000006 /* FinderActionsSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderActionsSettingsTests.swift; sourceTree = "<group>"; };
+		T00000000000000000000007 /* MenuActionPayloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuActionPayloadTests.swift; sourceTree = "<group>"; };
+		T00000000000000000000008 /* RunnerXPCTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerXPCTests.swift; sourceTree = "<group>"; };
+		T00000000000000000000009 /* ScriptInvocationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptInvocationTests.swift; sourceTree = "<group>"; };
 		Q00000000000000000000001 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
 		Q00000000000000000000002 /* Local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig.example; sourceTree = "<group>"; };
 		P00000000000000000000001 /* App Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "App Info.plist"; path = App/Info.plist; sourceTree = "<group>"; };
 		P00000000000000000000002 /* FinderSync Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "FinderSync Info.plist"; path = FinderSync/Info.plist; sourceTree = "<group>"; };
 		P00000000000000000000003 /* Runner Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Runner Info.plist"; path = Runner/Info.plist; sourceTree = "<group>"; };
 		P00000000000000000000005 /* FinderSync.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FinderSync.entitlements; sourceTree = "<group>"; };
-		P00000000000000000000007 /* com.finderactions.runner.plist.template */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = com.finderactions.runner.plist.template; sourceTree = "<group>"; };
 		F00000000000000000000001 /* FinderSync.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FinderSync.framework; path = System/Library/Frameworks/FinderSync.framework; sourceTree = SDKROOT; };
-		F00000000000000000000002 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
 		F00000000000000000000003 /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		F00000000000000000000004 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		PR0000000000000000000001 /* libFinderActionsCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libFinderActionsCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -98,7 +104,7 @@
 
 /* Begin PBXFrameworksBuildPhase section */
 		PF0000000000000000000001 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		PF0000000000000000000002 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (BA0000000000000000000004, BA0000000000000000000005, BA0000000000000000000006, BA0000000000000000000007, ); runOnlyForDeploymentPostprocessing = 0; };
+		PF0000000000000000000002 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (BA0000000000000000000004, BA0000000000000000000005, BA0000000000000000000007, ); runOnlyForDeploymentPostprocessing = 0; };
 		PF0000000000000000000003 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (BE0000000000000000000002, BE0000000000000000000003, ); runOnlyForDeploymentPostprocessing = 0; };
 		PF0000000000000000000004 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (BR0000000000000000000005, BR0000000000000000000006, ); runOnlyForDeploymentPostprocessing = 0; };
 		PF0000000000000000000005 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (BT0000000000000000000004, BT0000000000000000000005, ); runOnlyForDeploymentPostprocessing = 0; };
@@ -106,22 +112,22 @@
 
 /* Begin PBXGroup section */
 		GROOT00000000000000000001 = {isa = PBXGroup; children = (GCORE00000000000000000001, GAPPS00000000000000000001, GTEST00000000000000000001, GRES00000000000000000001, GCONFIG000000000000000001, GFRAME000000000000000001, GPROD0000000000000000001, ); sourceTree = "<group>"; };
-		GCORE00000000000000000001 /* FinderActionsCore */ = {isa = PBXGroup; children = (C00000000000000000000001, C00000000000000000000002, C00000000000000000000003, C00000000000000000000004, C00000000000000000000005, C00000000000000000000006, C00000000000000000000007, C00000000000000000000008, ); name = FinderActionsCore; path = Sources/FinderActionsCore; sourceTree = SOURCE_ROOT; };
+		GCORE00000000000000000001 /* FinderActionsCore */ = {isa = PBXGroup; children = (C00000000000000000000001, C00000000000000000000002, C00000000000000000000003, C00000000000000000000004, C00000000000000000000005, C00000000000000000000006, C00000000000000000000007, C00000000000000000000008, C00000000000000000000009, ); name = FinderActionsCore; path = Sources/FinderActionsCore; sourceTree = SOURCE_ROOT; };
 		GAPPS00000000000000000001 /* Apps */ = {isa = PBXGroup; children = (GAPP000000000000000000001, GEXT000000000000000000001, GRUN000000000000000000001, ); path = Apps; sourceTree = SOURCE_ROOT; };
 		GAPP000000000000000000001 /* FinderActionsApp */ = {isa = PBXGroup; children = (A00000000000000000000001, A00000000000000000000002, A00000000000000000000003, ); path = FinderActionsApp; sourceTree = "<group>"; };
-		GEXT000000000000000000001 /* FinderSyncExtension */ = {isa = PBXGroup; children = (E00000000000000000000001, E00000000000000000000002, ); path = FinderSyncExtension; sourceTree = "<group>"; };
+		GEXT000000000000000000001 /* FinderSyncExtension */ = {isa = PBXGroup; children = (E00000000000000000000001, ); path = FinderSyncExtension; sourceTree = "<group>"; };
 		GRUN000000000000000000001 /* FinderActionsRunner */ = {isa = PBXGroup; children = (R00000000000000000000001, R00000000000000000000002, R00000000000000000000003, R00000000000000000000004, ); path = FinderActionsRunner; sourceTree = "<group>"; };
-		GTEST00000000000000000001 /* Tests */ = {isa = PBXGroup; children = (T00000000000000000000001, T00000000000000000000002, T00000000000000000000003, T00000000000000000000004, ); name = FinderActionsCoreTests; path = Tests/FinderActionsCoreTests; sourceTree = SOURCE_ROOT; };
-		GRES00000000000000000001 /* Resources */ = {isa = PBXGroup; children = (P00000000000000000000001, P00000000000000000000002, P00000000000000000000003, GENT000000000000000000001, P00000000000000000000007, ); path = Resources; sourceTree = SOURCE_ROOT; };
+		GTEST00000000000000000001 /* Tests */ = {isa = PBXGroup; children = (T00000000000000000000001, T00000000000000000000002, T00000000000000000000003, T00000000000000000000004, T00000000000000000000005, T00000000000000000000006, T00000000000000000000007, T00000000000000000000008, T00000000000000000000009, ); name = FinderActionsCoreTests; path = Tests/FinderActionsCoreTests; sourceTree = SOURCE_ROOT; };
+		GRES00000000000000000001 /* Resources */ = {isa = PBXGroup; children = (P00000000000000000000001, P00000000000000000000002, P00000000000000000000003, GENT000000000000000000001, ); path = Resources; sourceTree = SOURCE_ROOT; };
 		GENT000000000000000000001 /* Entitlements */ = {isa = PBXGroup; children = (P00000000000000000000005, ); path = Entitlements; sourceTree = "<group>"; };
 		GCONFIG000000000000000001 /* Config */ = {isa = PBXGroup; children = (Q00000000000000000000001, Q00000000000000000000002, ); path = Config; sourceTree = SOURCE_ROOT; };
-		GFRAME000000000000000001 /* Frameworks */ = {isa = PBXGroup; children = (F00000000000000000000001, F00000000000000000000002, F00000000000000000000003, F00000000000000000000004, ); name = Frameworks; sourceTree = "<group>"; };
+		GFRAME000000000000000001 /* Frameworks */ = {isa = PBXGroup; children = (F00000000000000000000001, F00000000000000000000003, F00000000000000000000004, ); name = Frameworks; sourceTree = "<group>"; };
 		GPROD0000000000000000001 /* Products */ = {isa = PBXGroup; children = (PR0000000000000000000001, PR0000000000000000000002, PR0000000000000000000003, PR0000000000000000000004, PR0000000000000000000005, ); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
 		NT0000000000000000000001 /* FinderActionsCore */ = {isa = PBXNativeTarget; buildConfigurationList = CLCORE0000000000000000001; buildPhases = (PS0000000000000000000001, PF0000000000000000000001, ); buildRules = (); dependencies = (); name = FinderActionsCore; productName = FinderActionsCore; productReference = PR0000000000000000000001; productType = "com.apple.product-type.library.static"; };
-		NT0000000000000000000002 /* Finder Actions */ = {isa = PBXNativeTarget; buildConfigurationList = CLAPP00000000000000000001; buildPhases = (PS0000000000000000000002, PF0000000000000000000002, RES0000000000000000000002, COPY000000000000000000001, COPY000000000000000000002, SHELL00000000000000000001, ); buildRules = (); dependencies = (DEP0000000000000000000001, DEP0000000000000000000002, DEP0000000000000000000003, ); name = "Finder Actions"; productName = FinderActions; productReference = PR0000000000000000000002; productType = "com.apple.product-type.application"; };
+		NT0000000000000000000002 /* Finder Actions */ = {isa = PBXNativeTarget; buildConfigurationList = CLAPP00000000000000000001; buildPhases = (PS0000000000000000000002, PF0000000000000000000002, RES0000000000000000000002, COPY000000000000000000001, COPY000000000000000000002, ); buildRules = (); dependencies = (DEP0000000000000000000001, DEP0000000000000000000002, DEP0000000000000000000003, ); name = "Finder Actions"; productName = FinderActions; productReference = PR0000000000000000000002; productType = "com.apple.product-type.application"; };
 		NT0000000000000000000003 /* FinderActionsFinderSync */ = {isa = PBXNativeTarget; buildConfigurationList = CLEXT00000000000000000001; buildPhases = (PS0000000000000000000003, PF0000000000000000000003, RES0000000000000000000003, ); buildRules = (); dependencies = (DEP0000000000000000000004, ); name = FinderActionsFinderSync; productName = FinderActionsFinderSync; productReference = PR0000000000000000000003; productType = "com.apple.product-type.app-extension"; };
 		NT0000000000000000000004 /* FinderActionsRunner */ = {isa = PBXNativeTarget; buildConfigurationList = CLRUN00000000000000000001; buildPhases = (PS0000000000000000000004, PF0000000000000000000004, RES0000000000000000000004, ); buildRules = (); dependencies = (DEP0000000000000000000005, ); name = FinderActionsRunner; productName = FinderActionsRunner; productReference = PR0000000000000000000004; productType = "com.apple.product-type.application"; };
 		NT0000000000000000000005 /* FinderActionsCoreTests */ = {isa = PBXNativeTarget; buildConfigurationList = CLTEST0000000000000000001; buildPhases = (PS0000000000000000000005, PF0000000000000000000005, RES0000000000000000000005, ); buildRules = (); dependencies = (DEP0000000000000000000006, ); name = FinderActionsCoreTests; productName = FinderActionsCoreTests; productReference = PR0000000000000000000005; productType = "com.apple.product-type.bundle.unit-test"; };
@@ -138,16 +144,13 @@
 		RES0000000000000000000005 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		SHELL00000000000000000001 /* Generate Legacy LaunchAgent */ = {isa = PBXShellScriptBuildPhase; buildActionMask = 2147483647; files = (); inputPaths = ("$(SRCROOT)/Resources/Runner/com.finderactions.runner.plist.template", ); name = "Generate Legacy LaunchAgent"; outputPaths = ("$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchAgents/com.finderactions.runner.plist", ); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "set -eu\noutput=\"${TARGET_BUILD_DIR}/${CONTENTS_FOLDER_PATH}/Library/LaunchAgents/com.finderactions.runner.plist\"\n/bin/mkdir -p \"$(/usr/bin/dirname \"${output}\")\"\n/usr/bin/sed \"s|@LEGACY_MACH_SERVICE_NAME@|${LEGACY_MACH_SERVICE_NAME}|g\" \"${SRCROOT}/Resources/Runner/com.finderactions.runner.plist.template\" > \"${output}\"\n/usr/bin/plutil -lint \"${output}\"\n"; };
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		PS0000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BC0000000000000000000001, BC0000000000000000000002, BC0000000000000000000003, BC0000000000000000000004, BC0000000000000000000005, BC0000000000000000000006, BC0000000000000000000007, BC0000000000000000000008, ); runOnlyForDeploymentPostprocessing = 0; };
+		PS0000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BC0000000000000000000001, BC0000000000000000000002, BC0000000000000000000003, BC0000000000000000000004, BC0000000000000000000005, BC0000000000000000000006, BC0000000000000000000007, BC0000000000000000000008, BC0000000000000000000009, ); runOnlyForDeploymentPostprocessing = 0; };
 		PS0000000000000000000002 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BA0000000000000000000001, BA0000000000000000000002, BA0000000000000000000003, ); runOnlyForDeploymentPostprocessing = 0; };
-		PS0000000000000000000003 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BE0000000000000000000001, BE0000000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
+		PS0000000000000000000003 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BE0000000000000000000001, ); runOnlyForDeploymentPostprocessing = 0; };
 		PS0000000000000000000004 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BR0000000000000000000001, BR0000000000000000000002, BR0000000000000000000003, BR0000000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
-		PS0000000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BT0000000000000000000001, BT0000000000000000000002, BT0000000000000000000003, BT0000000000000000000006, BT0000000000000000000007, ); runOnlyForDeploymentPostprocessing = 0; };
+		PS0000000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BT0000000000000000000001, BT0000000000000000000002, BT0000000000000000000003, BT0000000000000000000007, BT0000000000000000000008, BT0000000000000000000009, BT0000000000000000000010, BT0000000000000000000011, BT0000000000000000000012, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */

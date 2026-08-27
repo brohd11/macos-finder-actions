@@ -5,7 +5,6 @@ public protocol RunnerXPCProtocol {
     func run(_ request: RunRequest, withReply reply: @escaping (RunReply) -> Void)
     func reload(withReply reply: @escaping (RunReply) -> Void)
     func catalogSnapshot(withReply reply: @escaping (CatalogSnapshotReply) -> Void)
-    func ping(withReply reply: @escaping (RunReply) -> Void)
     func notificationStatus(withReply reply: @escaping (String) -> Void)
     func requestNotificationAuthorization(withReply reply: @escaping (RunReply) -> Void)
 }
@@ -96,12 +95,10 @@ public final class RunReply: NSObject, NSSecureCoding, @unchecked Sendable {
 
     public let accepted: Bool
     public let message: String
-    public let runID: String?
 
-    public init(accepted: Bool, message: String, runID: String? = nil) {
+    public init(accepted: Bool, message: String) {
         self.accepted = accepted
         self.message = message
-        self.runID = runID
     }
 
     public required init?(coder: NSCoder) {
@@ -110,13 +107,11 @@ public final class RunReply: NSObject, NSSecureCoding, @unchecked Sendable {
         else { return nil }
         self.accepted = coder.decodeBool(forKey: "accepted")
         self.message = message
-        self.runID = coder.decodeObject(of: NSString.self, forKey: "runID") as String?
     }
 
     public func encode(with coder: NSCoder) {
         coder.encode(accepted, forKey: "accepted")
         coder.encode(message as NSString, forKey: "message")
-        coder.encode(runID as NSString?, forKey: "runID")
     }
 }
 
@@ -184,36 +179,26 @@ public final class RunnerClient: @unchecked Sendable {
         return try reply.decodedSnapshot()
     }
 
+    /// Finder's `menu(for:)` must return synchronously, so this blocks on the
+    /// same machinery the async path uses rather than duplicating it.
     public func catalogSnapshotSynchronously(
         timeout: TimeInterval = RunnerClient.finderMenuTimeout
     ) throws -> ActionSnapshot {
-        let pending = PendingSynchronousXPCCall<CatalogSnapshotReply>()
-        let connection = NSXPCConnection(machServiceName: machServiceName)
-        connection.remoteObjectInterface = XPCInterfaceFactory.runnerInterface()
-        connection.interruptionHandler = {
-            pending.fail(RunnerClientError.connectionInterrupted)
+        let semaphore = DispatchSemaphore(value: 0)
+        let box = ResultBox<CatalogSnapshotReply>()
+        let pending = PendingXPCCall<CatalogSnapshotReply> { result in
+            box.store(result)
+            semaphore.signal()
         }
-        connection.invalidationHandler = {
-            pending.fail(RunnerClientError.connectionInvalidated)
+        guard let proxy = connect(pending: pending, timeout: timeout) else {
+            return try box.take().decodedSnapshot()
         }
-        connection.resume()
-        defer { connection.invalidate() }
-
-        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ error in
-            pending.fail(error)
-        }) as? RunnerXPCProtocol else {
-            throw RunnerClientError.proxyUnavailable
+        proxy.catalogSnapshot { pending.succeed($0) }
+        if semaphore.wait(timeout: .now() + timeout) != .success {
+            pending.fail(RunnerClientError.timedOut)
+            semaphore.wait()
         }
-        proxy.catalogSnapshot { reply in
-            pending.succeed(reply)
-        }
-        return try pending.wait(timeout: timeout).decodedSnapshot()
-    }
-
-    public func ping() async throws -> RunReply {
-        try await call(timeout: Self.standardTimeout) { proxy, reply in
-            proxy.ping(withReply: reply)
-        }
+        return try box.take().decodedSnapshot()
     }
 
     public func notificationStatus() async throws -> String {
@@ -233,82 +218,59 @@ public final class RunnerClient: @unchecked Sendable {
         _ invoke: @escaping @Sendable (RunnerXPCProtocol, @escaping (Value) -> Void) -> Void
     ) async throws -> Value {
         try await withCheckedThrowingContinuation { continuation in
-            let pending = PendingXPCCall(continuation: continuation)
-            let connection = NSXPCConnection(machServiceName: machServiceName)
-            connection.remoteObjectInterface = XPCInterfaceFactory.runnerInterface()
-            pending.install(connection)
-            connection.interruptionHandler = {
-                pending.fail(RunnerClientError.connectionInterrupted)
-            }
-            connection.invalidationHandler = {
-                pending.fail(RunnerClientError.connectionInvalidated)
-            }
-            pending.scheduleTimeout(after: timeout)
-            connection.resume()
-
-            guard let proxy = connection.remoteObjectProxyWithErrorHandler({ error in
-                pending.fail(error)
-            }) as? RunnerXPCProtocol else {
-                pending.fail(RunnerClientError.proxyUnavailable)
-                return
-            }
-
-            invoke(proxy) { value in
-                pending.succeed(value)
-            }
+            let pending = PendingXPCCall<Value> { continuation.resume(with: $0) }
+            guard let proxy = connect(pending: pending, timeout: timeout) else { return }
+            invoke(proxy) { pending.succeed($0) }
         }
+    }
+
+    /// Opens a connection, wires its failure handlers and timeout into `pending`,
+    /// and returns the proxy. Returns nil after failing `pending` if no proxy exists.
+    private func connect<Value: Sendable>(
+        pending: PendingXPCCall<Value>,
+        timeout: TimeInterval
+    ) -> RunnerXPCProtocol? {
+        let connection = NSXPCConnection(machServiceName: machServiceName)
+        connection.remoteObjectInterface = XPCInterfaceFactory.runnerInterface()
+        pending.install(connection)
+        connection.interruptionHandler = { pending.fail(RunnerClientError.connectionInterrupted) }
+        connection.invalidationHandler = { pending.fail(RunnerClientError.connectionInvalidated) }
+        pending.scheduleTimeout(after: timeout)
+        connection.resume()
+
+        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ pending.fail($0) })
+            as? RunnerXPCProtocol
+        else {
+            pending.fail(RunnerClientError.proxyUnavailable)
+            return nil
+        }
+        return proxy
     }
 }
 
-private final class PendingSynchronousXPCCall<Value: Sendable>: @unchecked Sendable {
+private final class ResultBox<Value: Sendable>: @unchecked Sendable {
     private let lock = NSLock()
-    private let semaphore = DispatchSemaphore(value: 0)
     private var result: Result<Value, any Error>?
 
-    func succeed(_ value: Value) {
-        finish(.success(value))
+    func store(_ result: Result<Value, any Error>) {
+        lock.withLock { if self.result == nil { self.result = result } }
     }
 
-    func fail(_ error: any Error) {
-        finish(.failure(error))
-    }
-
-    func wait(timeout: TimeInterval) throws -> Value {
-        guard semaphore.wait(timeout: .now() + timeout) == .success else {
-            lock.lock()
-            if result == nil {
-                result = .failure(RunnerClientError.timedOut)
-            }
-            let result = self.result!
-            lock.unlock()
-            return try result.get()
-        }
-        lock.lock()
-        let result = self.result!
-        lock.unlock()
-        return try result.get()
-    }
-
-    private func finish(_ result: Result<Value, any Error>) {
-        lock.lock()
-        guard self.result == nil else {
-            lock.unlock()
-            return
-        }
-        self.result = result
-        lock.unlock()
-        semaphore.signal()
+    func take() throws -> Value {
+        try lock.withLock { result ?? .failure(RunnerClientError.timedOut) }.get()
     }
 }
 
+/// Fires its completion exactly once, then tears down the connection and timeout.
+/// Shared by the async and synchronous client paths.
 final class PendingXPCCall<Value: Sendable>: @unchecked Sendable {
     private let lock = NSLock()
-    private var continuation: CheckedContinuation<Value, any Error>?
+    private var completion: ((Result<Value, any Error>) -> Void)?
     private var connection: NSXPCConnection?
     private var timeoutWorkItem: DispatchWorkItem?
 
-    init(continuation: CheckedContinuation<Value, any Error>) {
-        self.continuation = continuation
+    init(completion: @escaping (Result<Value, any Error>) -> Void) {
+        self.completion = completion
     }
 
     func install(_ connection: NSXPCConnection) {
@@ -322,7 +284,7 @@ final class PendingXPCCall<Value: Sendable>: @unchecked Sendable {
             self.fail(RunnerClientError.timedOut)
         }
         lock.lock()
-        guard continuation != nil else {
+        guard completion != nil else {
             lock.unlock()
             item.cancel()
             return
@@ -342,11 +304,11 @@ final class PendingXPCCall<Value: Sendable>: @unchecked Sendable {
 
     private func finish(_ result: Result<Value, any Error>) {
         lock.lock()
-        guard let continuation else {
+        guard let completion else {
             lock.unlock()
             return
         }
-        self.continuation = nil
+        self.completion = nil
         let connection = self.connection
         self.connection = nil
         let timeoutWorkItem = self.timeoutWorkItem
@@ -354,7 +316,7 @@ final class PendingXPCCall<Value: Sendable>: @unchecked Sendable {
         lock.unlock()
 
         timeoutWorkItem?.cancel()
-        continuation.resume(with: result)
+        completion(result)
         connection?.invalidate()
     }
 }

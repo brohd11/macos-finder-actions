@@ -1,11 +1,9 @@
 import Foundation
 
 public enum FinderActionConstants {
-    public static let schemaVersion = 1
     public static let configDirectoryName = "finder-actions"
     public static let configExtension = "finder-action"
     public static let runDirectoryName = "runs"
-    public static let legacyLaunchAgentPlistName = "com.finderactions.runner.plist"
     public static let settingsFileName = "settings.plist"
 
     public static var defaultConfigRoot: URL {
@@ -202,20 +200,17 @@ public struct FinderInvocation: Codable, Hashable, Sendable {
 }
 
 public struct ActionSnapshot: Codable, Sendable {
-    public let schemaVersion: Int
     public let generatedAt: Date
     public let configRoot: String
     public let actions: [FinderAction]
     public let diagnostics: [ActionDiagnostic]
 
     public init(
-        schemaVersion: Int = FinderActionConstants.schemaVersion,
         generatedAt: Date = Date(),
         configRoot: String,
         actions: [FinderAction],
         diagnostics: [ActionDiagnostic]
     ) {
-        self.schemaVersion = schemaVersion
         self.generatedAt = generatedAt
         self.configRoot = configRoot
         self.actions = actions

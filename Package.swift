@@ -2,33 +2,16 @@
 
 import PackageDescription
 
+// The shipping app, Finder extension and runner are built by FinderActions.xcodeproj.
+// This manifest exists so `swift test` gives a fast inner loop on the shared core.
 let package = Package(
     name: "FinderActions",
     platforms: [.macOS(.v13)],
     products: [
         .library(name: "FinderActionsCore", targets: ["FinderActionsCore"]),
-        .executable(name: "finder-actions-selftest", targets: ["FinderActionsSelfTest"]),
-        .executable(name: "finder-actions-runner-dev", targets: ["FinderActionsRunnerDev"]),
-        .executable(name: "finder-actions-app-dev", targets: ["FinderActionsAppDev"]),
-        .library(name: "FinderSyncExtensionDev", targets: ["FinderSyncExtensionDev"]),
     ],
     targets: [
         .target(name: "FinderActionsCore"),
-        .executableTarget(name: "FinderActionsSelfTest", dependencies: ["FinderActionsCore"]),
-        .executableTarget(
-            name: "FinderActionsRunnerDev",
-            dependencies: ["FinderActionsCore"],
-            path: "Apps/FinderActionsRunner"
-        ),
-        .executableTarget(
-            name: "FinderActionsAppDev",
-            dependencies: ["FinderActionsCore"],
-            path: "Apps/FinderActionsApp"
-        ),
-        .target(
-            name: "FinderSyncExtensionDev",
-            dependencies: ["FinderActionsCore"],
-            path: "Apps/FinderSyncExtension"
-        ),
+        .testTarget(name: "FinderActionsCoreTests", dependencies: ["FinderActionsCore"]),
     ]
 )
