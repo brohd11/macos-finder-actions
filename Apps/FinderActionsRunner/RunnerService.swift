@@ -7,17 +7,26 @@ final class RunnerService: NSObject, NSXPCListenerDelegate, RunnerXPCProtocol {
     private let catalog: CatalogCoordinator
     private let executor: ScriptExecutor
     private let logStore: RunLogStore
+    private let settingsStore: FinderActionsSettingsStore
 
-    init(machServiceName: String, catalog: CatalogCoordinator, executor: ScriptExecutor, logStore: RunLogStore) {
+    init(
+        machServiceName: String,
+        catalog: CatalogCoordinator,
+        executor: ScriptExecutor,
+        logStore: RunLogStore,
+        settingsStore: FinderActionsSettingsStore
+    ) {
         self.listener = NSXPCListener(machServiceName: machServiceName)
         self.catalog = catalog
         self.executor = executor
         self.logStore = logStore
+        self.settingsStore = settingsStore
         super.init()
         self.listener.delegate = self
     }
 
     func resume() {
+        _ = reloadConfiguredCatalog()
         catalog.start()
         listener.resume()
     }
@@ -30,8 +39,8 @@ final class RunnerService: NSObject, NSXPCListenerDelegate, RunnerXPCProtocol {
     }
 
     func run(_ request: RunRequest, withReply reply: @escaping (RunReply) -> Void) {
-        // The Finder extension reads configuration directly so its menus update
-        // immediately. Reload here as well to validate against the same contents.
+        // Reload before execution so validation uses the latest on-disk contents,
+        // even if the watcher has not observed a very recent edit yet.
         catalog.reload()
         guard let action = catalog.action(id: request.actionID) else {
             reply(rejectedReply(request, action: nil, message: "Action no longer exists."))
@@ -81,8 +90,15 @@ final class RunnerService: NSObject, NSXPCListenerDelegate, RunnerXPCProtocol {
     }
 
     func reload(withReply reply: @escaping (RunReply) -> Void) {
-        catalog.reload()
-        reply(RunReply(accepted: true, message: "Configuration reloaded."))
+        reply(reloadConfiguredCatalog())
+    }
+
+    func catalogSnapshot(withReply reply: @escaping (CatalogSnapshotReply) -> Void) {
+        do {
+            reply(try CatalogSnapshotReply(snapshot: catalog.currentSnapshot()))
+        } catch {
+            reply(CatalogSnapshotReply(snapshotData: nil, message: error.localizedDescription))
+        }
     }
 
     func ping(withReply reply: @escaping (RunReply) -> Void) {
@@ -111,6 +127,20 @@ final class RunnerService: NSObject, NSXPCListenerDelegate, RunnerXPCProtocol {
             } else {
                 reply.call(RunReply(accepted: allowed, message: allowed ? "Notifications enabled." : "Notifications were not allowed."))
             }
+        }
+    }
+
+    private func reloadConfiguredCatalog() -> RunReply {
+        do {
+            let selection = try settingsStore.load()
+            try catalog.configure(selection)
+            return RunReply(accepted: true, message: "Configuration reloaded from \(selection.url.path).")
+        } catch {
+            catalog.reportConfigurationError(
+                configRoot: FinderActionConstants.defaultConfigRoot,
+                message: error.localizedDescription
+            )
+            return RunReply(accepted: false, message: error.localizedDescription)
         }
     }
 

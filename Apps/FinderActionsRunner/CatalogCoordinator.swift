@@ -2,9 +2,11 @@ import Foundation
 import FinderActionsCore
 
 final class CatalogCoordinator: @unchecked Sendable {
-    private let configRoot: URL
     private let loader = ActionCatalogLoader()
     private let lock = NSLock()
+    private var configRoot: URL
+    private var configurationError: String?
+    private var generation = 0
     private var snapshot: ActionSnapshot
     private var fingerprint = ""
     private var timer: DispatchSourceTimer?
@@ -15,7 +17,6 @@ final class CatalogCoordinator: @unchecked Sendable {
     }
 
     func start() {
-        try? FileManager.default.createDirectory(at: configRoot, withIntermediateDirectories: true)
         reload()
 
         let timer = DispatchSource.makeTimerSource(queue: DispatchQueue(label: "FinderActions.ConfigWatcher"))
@@ -25,11 +26,53 @@ final class CatalogCoordinator: @unchecked Sendable {
         self.timer = timer
     }
 
-    func reload() {
-        let loaded = loader.load(from: configRoot)
+    func configure(_ selection: ConfigDirectorySelection) throws {
+        if !selection.isCustom {
+            try FileManager.default.createDirectory(at: selection.url, withIntermediateDirectories: true)
+        }
         lock.withLock {
+            configRoot = selection.url.standardizedFileURL
+            configurationError = nil
+            generation += 1
+        }
+        reload()
+    }
+
+    func reportConfigurationError(configRoot: URL, message: String) {
+        lock.withLock {
+            self.configRoot = configRoot.standardizedFileURL
+            configurationError = message
+            generation += 1
+        }
+        reload()
+    }
+
+    func reload() {
+        let configuration = lock.withLock {
+            (root: configRoot, error: configurationError, generation: generation)
+        }
+        let loaded: ActionSnapshot
+        if let error = configuration.error {
+            loaded = ActionSnapshot(
+                configRoot: configuration.root.path,
+                actions: [],
+                diagnostics: [ActionDiagnostic(
+                    severity: .error,
+                    file: FinderActionConstants.settingsURL.path,
+                    message: error
+                )]
+            )
+        } else {
+            loaded = loader.load(from: configuration.root)
+        }
+        let fingerprint = currentFingerprint(
+            at: configuration.root,
+            configurationError: configuration.error
+        )
+        lock.withLock {
+            guard generation == configuration.generation else { return }
             snapshot = loaded
-            fingerprint = currentFingerprint()
+            self.fingerprint = fingerprint
         }
     }
 
@@ -42,12 +85,23 @@ final class CatalogCoordinator: @unchecked Sendable {
     }
 
     private func reloadIfChanged() {
-        let next = currentFingerprint()
-        let changed = lock.withLock { next != fingerprint }
+        let configuration = lock.withLock {
+            (root: configRoot, error: configurationError, generation: generation)
+        }
+        let next = currentFingerprint(
+            at: configuration.root,
+            configurationError: configuration.error
+        )
+        let changed = lock.withLock {
+            generation == configuration.generation && next != fingerprint
+        }
         if changed { reload() }
     }
 
-    private func currentFingerprint() -> String {
+    private func currentFingerprint(at configRoot: URL, configurationError: String?) -> String {
+        if let configurationError {
+            return "settings-error|\(configurationError)"
+        }
         guard let enumerator = FileManager.default.enumerator(
             at: configRoot,
             includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey],

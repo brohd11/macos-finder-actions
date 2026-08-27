@@ -15,7 +15,7 @@ final class FinderSyncExtension: FIFinderSync {
         let monitoredRoot = URL(fileURLWithPath: "/", isDirectory: true)
         controller.directoryURLs = [monitoredRoot]
         Self.logger.notice(
-            "Finder Sync initialized bundle=\(Bundle.main.bundleIdentifier ?? "unknown", privacy: .public) monitoredRoot=\(monitoredRoot.path, privacy: .public) configRoot=\(FinderActionConstants.configRoot.path, privacy: .public)"
+            "Finder Sync initialized bundle=\(Bundle.main.bundleIdentifier ?? "unknown", privacy: .public) monitoredRoot=\(monitoredRoot.path, privacy: .public) catalogSource=runner"
         )
     }
 
@@ -35,7 +35,10 @@ final class FinderSyncExtension: FIFinderSync {
         Self.logger.notice(
             "Resolved invocation kind=\(kind.rawValue, privacy: .public) itemCount=\(invocation.items.count, privacy: .public) targetDirectory=\(invocation.targetDirectory, privacy: .public)"
         )
-        let snapshot = loadSnapshot()
+        guard let snapshot = loadSnapshot() else {
+            Self.logger.notice("Returning no menu because the runner catalog is unavailable")
+            return nil
+        }
 
         let actions = ActionMatcher.applicableActions(in: snapshot, invocation: invocation)
         let actionIDs = actions.map(\.id).joined(separator: ",")
@@ -222,25 +225,37 @@ final class FinderSyncExtension: FIFinderSync {
         )
     }
 
-    private func loadSnapshot() -> ActionSnapshot {
-        let snapshot = ActionCatalogLoader().load(from: FinderActionConstants.configRoot)
-        Self.logger.notice(
-            "Loaded catalog root=\(snapshot.configRoot, privacy: .public) activeActions=\(snapshot.actions.count, privacy: .public) diagnostics=\(snapshot.diagnostics.count, privacy: .public)"
-        )
-        for diagnostic in snapshot.diagnostics {
-            let line = diagnostic.line ?? 0
-            switch diagnostic.severity {
-            case .error:
-                Self.logger.error(
-                    "Catalog diagnostic file=\(diagnostic.file, privacy: .public) line=\(line, privacy: .public) message=\(diagnostic.message, privacy: .public)"
-                )
-            case .warning:
-                Self.logger.warning(
-                    "Catalog diagnostic file=\(diagnostic.file, privacy: .public) line=\(line, privacy: .public) message=\(diagnostic.message, privacy: .public)"
-                )
-            }
+    private func loadSnapshot() -> ActionSnapshot? {
+        guard let machServiceName = RuntimeConfiguration.machServiceName() else {
+            Self.logger.error("The runner Mach service name is missing while loading the catalog")
+            return nil
         }
-        return snapshot
+        do {
+            let snapshot = try RunnerClient(machServiceName: machServiceName)
+                .catalogSnapshotSynchronously()
+            Self.logger.notice(
+                "Loaded runner catalog root=\(snapshot.configRoot, privacy: .public) activeActions=\(snapshot.actions.count, privacy: .public) diagnostics=\(snapshot.diagnostics.count, privacy: .public)"
+            )
+            for diagnostic in snapshot.diagnostics {
+                let line = diagnostic.line ?? 0
+                switch diagnostic.severity {
+                case .error:
+                    Self.logger.error(
+                        "Catalog diagnostic file=\(diagnostic.file, privacy: .public) line=\(line, privacy: .public) message=\(diagnostic.message, privacy: .public)"
+                    )
+                case .warning:
+                    Self.logger.warning(
+                        "Catalog diagnostic file=\(diagnostic.file, privacy: .public) line=\(line, privacy: .public) message=\(diagnostic.message, privacy: .public)"
+                    )
+                }
+            }
+            return snapshot
+        } catch {
+            Self.logger.error(
+                "Could not load the runner catalog: \(error.localizedDescription, privacy: .public)"
+            )
+            return nil
+        }
     }
 
 }

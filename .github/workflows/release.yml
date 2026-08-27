@@ -229,8 +229,10 @@ jobs:
 
           extension_entitlements="$(codesign -d --entitlements :- "$extension" 2>&1)"
           grep -q 'com.apple.security.app-sandbox' <<< "$extension_entitlements"
-          grep -q 'com.apple.security.temporary-exception.files.home-relative-path.read-only' <<< "$extension_entitlements"
-          grep -q '/.config/finder-actions/' <<< "$extension_entitlements"
+          if grep -q 'com.apple.security.temporary-exception.files.home-relative-path.read-only' <<< "$extension_entitlements"; then
+            echo 'Finder extension unexpectedly has direct configuration-directory access.' >&2
+            exit 1
+          fi
           grep -q 'com.apple.security.temporary-exception.mach-lookup.global-name' <<< "$extension_entitlements"
           grep -q "$MACH_SERVICE_NAME" <<< "$extension_entitlements"
 

@@ -4,9 +4,53 @@ import Foundation
 public protocol RunnerXPCProtocol {
     func run(_ request: RunRequest, withReply reply: @escaping (RunReply) -> Void)
     func reload(withReply reply: @escaping (RunReply) -> Void)
+    func catalogSnapshot(withReply reply: @escaping (CatalogSnapshotReply) -> Void)
     func ping(withReply reply: @escaping (RunReply) -> Void)
     func notificationStatus(withReply reply: @escaping (String) -> Void)
     func requestNotificationAuthorization(withReply reply: @escaping (RunReply) -> Void)
+}
+
+@objc(FACatalogSnapshotReply)
+public final class CatalogSnapshotReply: NSObject, NSSecureCoding, @unchecked Sendable {
+    public static var supportsSecureCoding: Bool { true }
+
+    public let snapshotData: Data?
+    public let message: String
+
+    public init(snapshotData: Data?, message: String = "") {
+        self.snapshotData = snapshotData
+        self.message = message
+    }
+
+    public convenience init(snapshot: ActionSnapshot) throws {
+        try self.init(snapshotData: JSONEncoder().encode(snapshot))
+    }
+
+    public required init?(coder: NSCoder) {
+        snapshotData = coder.decodeObject(of: NSData.self, forKey: "snapshotData") as Data?
+        guard let message = coder.decodeObject(of: NSString.self, forKey: "message") as String? else {
+            return nil
+        }
+        self.message = message
+    }
+
+    public func encode(with coder: NSCoder) {
+        coder.encode(snapshotData as NSData?, forKey: "snapshotData")
+        coder.encode(message as NSString, forKey: "message")
+    }
+
+    public func decodedSnapshot() throws -> ActionSnapshot {
+        guard let snapshotData else {
+            throw RunnerClientError.catalogUnavailable(
+                message.isEmpty ? "The runner did not provide an action catalog." : message
+            )
+        }
+        do {
+            return try JSONDecoder().decode(ActionSnapshot.self, from: snapshotData)
+        } catch {
+            throw RunnerClientError.invalidCatalog(error.localizedDescription)
+        }
+    }
 }
 
 @objc(FARunRequest)
@@ -89,6 +133,8 @@ public enum RunnerClientError: LocalizedError, Sendable {
     case connectionInvalidated
     case proxyUnavailable
     case timedOut
+    case catalogUnavailable(String)
+    case invalidCatalog(String)
 
     public var errorDescription: String? {
         switch self {
@@ -100,6 +146,10 @@ public enum RunnerClientError: LocalizedError, Sendable {
             "The Finder Actions runner could not create an XPC proxy."
         case .timedOut:
             "The Finder Actions runner did not respond in time."
+        case .catalogUnavailable(let message):
+            message
+        case .invalidCatalog(let message):
+            "The Finder Actions runner returned an invalid action catalog: \(message)"
         }
     }
 }
@@ -108,6 +158,7 @@ public enum RunnerClientError: LocalizedError, Sendable {
 public final class RunnerClient: @unchecked Sendable {
     private static let standardTimeout: TimeInterval = 5
     private static let authorizationTimeout: TimeInterval = 60
+    public static let finderMenuTimeout: TimeInterval = 0.5
     private let machServiceName: String
 
     public init(machServiceName: String) {
@@ -124,6 +175,39 @@ public final class RunnerClient: @unchecked Sendable {
         try await call(timeout: Self.standardTimeout) { proxy, reply in
             proxy.reload(withReply: reply)
         }
+    }
+
+    public func catalogSnapshot() async throws -> ActionSnapshot {
+        let reply: CatalogSnapshotReply = try await call(timeout: Self.standardTimeout) { proxy, reply in
+            proxy.catalogSnapshot(withReply: reply)
+        }
+        return try reply.decodedSnapshot()
+    }
+
+    public func catalogSnapshotSynchronously(
+        timeout: TimeInterval = RunnerClient.finderMenuTimeout
+    ) throws -> ActionSnapshot {
+        let pending = PendingSynchronousXPCCall<CatalogSnapshotReply>()
+        let connection = NSXPCConnection(machServiceName: machServiceName)
+        connection.remoteObjectInterface = XPCInterfaceFactory.runnerInterface()
+        connection.interruptionHandler = {
+            pending.fail(RunnerClientError.connectionInterrupted)
+        }
+        connection.invalidationHandler = {
+            pending.fail(RunnerClientError.connectionInvalidated)
+        }
+        connection.resume()
+        defer { connection.invalidate() }
+
+        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ error in
+            pending.fail(error)
+        }) as? RunnerXPCProtocol else {
+            throw RunnerClientError.proxyUnavailable
+        }
+        proxy.catalogSnapshot { reply in
+            pending.succeed(reply)
+        }
+        return try pending.wait(timeout: timeout).decodedSnapshot()
     }
 
     public func ping() async throws -> RunReply {
@@ -173,6 +257,47 @@ public final class RunnerClient: @unchecked Sendable {
                 pending.succeed(value)
             }
         }
+    }
+}
+
+private final class PendingSynchronousXPCCall<Value: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private let semaphore = DispatchSemaphore(value: 0)
+    private var result: Result<Value, any Error>?
+
+    func succeed(_ value: Value) {
+        finish(.success(value))
+    }
+
+    func fail(_ error: any Error) {
+        finish(.failure(error))
+    }
+
+    func wait(timeout: TimeInterval) throws -> Value {
+        guard semaphore.wait(timeout: .now() + timeout) == .success else {
+            lock.lock()
+            if result == nil {
+                result = .failure(RunnerClientError.timedOut)
+            }
+            let result = self.result!
+            lock.unlock()
+            return try result.get()
+        }
+        lock.lock()
+        let result = self.result!
+        lock.unlock()
+        return try result.get()
+    }
+
+    private func finish(_ result: Result<Value, any Error>) {
+        lock.lock()
+        guard self.result == nil else {
+            lock.unlock()
+            return
+        }
+        self.result = result
+        lock.unlock()
+        semaphore.signal()
     }
 }
 

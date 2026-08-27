@@ -141,10 +141,15 @@ Edit `Config/Local.xcconfig` with your team ID and a unique reverse-DNS prefix, 
 3. In the dashboard, enable the background runner.
 4. Choose **Manage** beside Finder extension and enable Finder Actions in System Settings.
 5. Allow failure notifications if desired.
-6. Put one or more `.finder-action` files below `~/.config/finder-actions/`.
+6. Put one or more `.finder-action` files below `~/.config/finder-actions/`, or use
+   **Choose…** in the Actions tab to select another configuration directory.
 
 The bundle identifiers and background runner Mach service are derived from
 `BUNDLE_ID_PREFIX`; no App Group or provisioning profile is required.
+
+The background runner owns the action catalog and shares parsed snapshots with the app and
+Finder extension. Custom configuration directories therefore do not require symlinks or
+additional Finder-extension filesystem entitlements.
 
 The background runner is stored as a per-user LaunchAgent in `~/Library/LaunchAgents`.
 Disable it from the dashboard before permanently removing the app.

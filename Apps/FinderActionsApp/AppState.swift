@@ -27,6 +27,8 @@ final class AppState: ObservableObject {
     @Published var selectedRunID: UUID?
     @Published var notificationStatus = "Checking…"
     @Published var errorMessage: String?
+    @Published private(set) var configRoot = FinderActionConstants.defaultConfigRoot
+    @Published private(set) var usesCustomConfigDirectory = false
     @Published private(set) var runnerRegistration: RunnerRegistrationState = .checking
     @Published private(set) var runnerHealth: RunnerHealthState = .checking
     @Published private(set) var notificationAuthorizationInFlight = false
@@ -38,7 +40,7 @@ final class AppState: ObservableObject {
     private let runnerClient: RunnerClient?
     private let launchAgentManager: LaunchAgentManager?
     private let runnerBuildIdentifier: String
-    private let catalogLoader = ActionCatalogLoader()
+    private let settingsStore = FinderActionsSettingsStore()
     private var timer: Timer?
     private var runnerInitializationComplete = false
     private var runnerRegistrationRefreshInFlight = false
@@ -47,12 +49,13 @@ final class AppState: ObservableObject {
     private var lastNotificationRefresh = Date.distantPast
     private var runnerHealthRefreshInFlight = false
     private var notificationRefreshInFlight = false
+    private var snapshotRefreshInFlight = false
+    private var lastSnapshotRefresh = Date.distantPast
 
     private static let activeRunnerBuildKey = "ActiveLaunchAgentRunnerBuild"
 
     var extensionEnabled: Bool { FIFinderSyncController.isExtensionEnabled }
     var selectedRun: RunRecord? { runs.first { $0.id == selectedRunID } }
-    var configRoot: URL { FinderActionConstants.configRoot }
     var runnerRegistered: Bool { runnerRegistration == .enabled }
     var runnerConfigured: Bool {
         switch runnerRegistration {
@@ -95,17 +98,26 @@ final class AppState: ObservableObject {
     }
 
     init() {
+        do {
+            let selection = try settingsStore.load()
+            configRoot = selection.url
+            usesCustomConfigDirectory = selection.isCustom
+        } catch {
+            usesCustomConfigDirectory = FileManager.default.fileExists(atPath: settingsStore.fileURL.path)
+            errorMessage = error.localizedDescription
+        }
+
         let serviceName = RuntimeConfiguration.machServiceName()
         runnerClient = serviceName.map(RunnerClient.init(machServiceName:))
+        let runnerExecutable = Bundle.main.bundleURL
+            .appendingPathComponent("Contents", isDirectory: true)
+            .appendingPathComponent("Library", isDirectory: true)
+            .appendingPathComponent("LoginItems", isDirectory: true)
+            .appendingPathComponent("FinderActionsRunner.app", isDirectory: true)
+            .appendingPathComponent("Contents", isDirectory: true)
+            .appendingPathComponent("MacOS", isDirectory: true)
+            .appendingPathComponent("FinderActionsRunner", isDirectory: false)
         if let serviceName {
-            let runnerExecutable = Bundle.main.bundleURL
-                .appendingPathComponent("Contents", isDirectory: true)
-                .appendingPathComponent("Library", isDirectory: true)
-                .appendingPathComponent("LoginItems", isDirectory: true)
-                .appendingPathComponent("FinderActionsRunner.app", isDirectory: true)
-                .appendingPathComponent("Contents", isDirectory: true)
-                .appendingPathComponent("MacOS", isDirectory: true)
-                .appendingPathComponent("FinderActionsRunner", isDirectory: false)
             launchAgentManager = LaunchAgentManager(configuration: LaunchAgentConfiguration(
                 serviceName: serviceName,
                 executableURL: runnerExecutable,
@@ -116,9 +128,15 @@ final class AppState: ObservableObject {
         }
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
-        runnerBuildIdentifier = "\(version)-\(build)"
+        runnerBuildIdentifier = Self.runnerBuildIdentifier(
+            version: version,
+            build: build,
+            executableURL: runnerExecutable
+        )
 
-        try? FileManager.default.createDirectory(at: configRoot, withIntermediateDirectories: true)
+        if !usesCustomConfigDirectory {
+            try? FileManager.default.createDirectory(at: configRoot, withIntermediateDirectories: true)
+        }
         refresh()
         Task { [weak self] in await self?.initializeRunnerRegistration() }
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -128,13 +146,13 @@ final class AppState: ObservableObject {
 
     func refresh() {
         refreshRunnerRegistration()
-        snapshot = catalogLoader.load(from: configRoot)
         runs = RunLogStore(directory: FinderActionConstants.runLogDirectory).loadAll()
         if let selectedRunID, !runs.contains(where: { $0.id == selectedRunID }) {
             self.selectedRunID = nil
         }
 
         refreshRunnerHealth()
+        refreshSnapshot()
         refreshNotificationStatus()
     }
 
@@ -214,8 +232,69 @@ final class AppState: ObservableObject {
     }
 
     func revealConfigFolder() {
-        try? FileManager.default.createDirectory(at: configRoot, withIntermediateDirectories: true)
+        if usesCustomConfigDirectory {
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: configRoot.path, isDirectory: &isDirectory),
+                  isDirectory.boolValue else {
+                errorMessage = "The selected configuration directory is unavailable: \(configRoot.path)"
+                return
+            }
+        } else {
+            do {
+                try FileManager.default.createDirectory(at: configRoot, withIntermediateDirectories: true)
+            } catch {
+                errorMessage = error.localizedDescription
+                return
+            }
+        }
         NSWorkspace.shared.activateFileViewerSelecting([configRoot])
+    }
+
+    func chooseConfigDirectory() {
+        let panel = NSOpenPanel()
+        panel.title = "Choose Finder Actions Configuration Directory"
+        panel.prompt = "Choose"
+        panel.directoryURL = configRoot
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let directory = panel.url else { return }
+
+        do {
+            applyConfigDirectorySelection(try settingsStore.saveCustomDirectory(directory))
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func resetConfigDirectory() {
+        do {
+            applyConfigDirectorySelection(try settingsStore.reset())
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func applyConfigDirectorySelection(_ selection: ConfigDirectorySelection) {
+        configRoot = selection.url
+        usesCustomConfigDirectory = selection.isCustom
+        snapshot = nil
+        lastSnapshotRefresh = .distantPast
+        guard runnerRegistered, let runnerClient else { return }
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let reply = try await runnerClient.reload()
+                self.errorMessage = reply.accepted ? nil : reply.message
+                self.lastSnapshotRefresh = .distantPast
+                self.refreshSnapshot()
+            } catch {
+                self.markRunnerUnavailable()
+                self.errorMessage = error.localizedDescription
+            }
+        }
     }
 
     func reloadConfiguration() {
@@ -225,6 +304,7 @@ final class AppState: ObservableObject {
             do {
                 let reply = try await runnerClient.reload()
                 self.errorMessage = reply.accepted ? nil : reply.message
+                self.lastSnapshotRefresh = .distantPast
                 self.refresh()
             } catch {
                 self.markRunnerUnavailable()
@@ -309,10 +389,18 @@ final class AppState: ObservableObject {
         }
         var registration = await launchAgentManager.registration()
         let activeBuild = UserDefaults.standard.string(forKey: Self.activeRunnerBuildKey)
-        let buildChanged = registration == .loaded && activeBuild != nil && activeBuild != runnerBuildIdentifier
+        let buildChanged = registration == .loaded && activeBuild != runnerBuildIdentifier
+        var protocolChanged = false
+        if allowAutomaticRepair, registration == .loaded, !buildChanged, let runnerClient {
+            do {
+                _ = try await runnerClient.catalogSnapshot()
+            } catch {
+                protocolChanged = true
+            }
+        }
         let shouldRepair = allowAutomaticRepair && {
             if case .needsRepair = registration { return true }
-            return buildChanged
+            return buildChanged || protocolChanged
         }()
 
         if shouldRepair {
@@ -370,15 +458,49 @@ final class AppState: ObservableObject {
             guard let self else { return }
             defer { self.runnerHealthRefreshInFlight = false }
             do {
-                let reply = try await runnerClient.ping()
+                let snapshot = try await runnerClient.catalogSnapshot()
                 guard self.runnerRegistered else { return }
-                self.runnerHealth = reply.accepted ? .available : .unavailable
+                self.runnerHealth = .available
+                self.applyRunnerSnapshot(snapshot)
             } catch {
                 guard self.runnerRegistered else { return }
                 self.markRunnerUnavailable()
             }
             self.refreshNotificationStatus()
         }
+    }
+
+    private func refreshSnapshot() {
+        guard runnerRegistered, let runnerClient else {
+            snapshot = nil
+            return
+        }
+        guard runnerHealth != .unavailable else {
+            snapshot = nil
+            return
+        }
+        guard !snapshotRefreshInFlight else { return }
+        guard Date().timeIntervalSince(lastSnapshotRefresh) >= 1 else { return }
+        lastSnapshotRefresh = Date()
+        snapshotRefreshInFlight = true
+
+        Task { [weak self] in
+            guard let self else { return }
+            defer { self.snapshotRefreshInFlight = false }
+            do {
+                let snapshot = try await runnerClient.catalogSnapshot()
+                guard self.runnerRegistered else { return }
+                self.applyRunnerSnapshot(snapshot)
+            } catch {
+                guard self.runnerRegistered else { return }
+                self.markRunnerUnavailable()
+            }
+        }
+    }
+
+    private func applyRunnerSnapshot(_ snapshot: ActionSnapshot) {
+        self.snapshot = snapshot
+        configRoot = URL(fileURLWithPath: snapshot.configRoot, isDirectory: true)
     }
 
     private func refreshNotificationStatus() {
@@ -414,6 +536,7 @@ final class AppState: ObservableObject {
 
     private func markRunnerUnavailable() {
         runnerHealth = .unavailable
+        snapshot = nil
         notificationStatus = runnerConfigured ? "Runner unavailable" : "Runner required"
     }
 
@@ -437,6 +560,16 @@ final class AppState: ObservableObject {
 
     private func recordActiveRunnerBuild() {
         UserDefaults.standard.set(runnerBuildIdentifier, forKey: Self.activeRunnerBuildKey)
+    }
+
+    private static func runnerBuildIdentifier(version: String, build: String, executableURL: URL) -> String {
+        let values = try? executableURL.resourceValues(forKeys: [
+            .contentModificationDateKey,
+            .fileSizeKey,
+        ])
+        let modified = values?.contentModificationDate?.timeIntervalSince1970 ?? 0
+        let size = values?.fileSize ?? 0
+        return "\(version)-\(build)-\(size)-\(modified)"
     }
 
     func copyExample() {

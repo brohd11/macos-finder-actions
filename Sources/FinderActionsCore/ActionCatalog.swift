@@ -12,16 +12,26 @@ public struct ActionCatalogLoader: Sendable {
         var actions: [FinderAction] = []
         var diagnostics: [ActionDiagnostic] = []
 
-        guard FileManager.default.fileExists(atPath: root.path) else {
-            return ActionSnapshot(configRoot: root.path, actions: [], diagnostics: [])
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: root.path, isDirectory: &isDirectory) else {
+            return unavailableSnapshot(root: root, message: "Configuration directory does not exist.")
+        }
+        guard isDirectory.boolValue else {
+            return unavailableSnapshot(root: root, message: "Configuration path is not a directory.")
+        }
+        guard FileManager.default.isReadableFile(atPath: root.path) else {
+            return unavailableSnapshot(root: root, message: "Configuration directory is not readable.")
         }
 
         let keys: [URLResourceKey] = [.isRegularFileKey, .isSymbolicLinkKey]
-        let files = (FileManager.default.enumerator(
+        guard let enumerator = FileManager.default.enumerator(
             at: root,
             includingPropertiesForKeys: keys,
             options: [.skipsHiddenFiles]
-        )?.allObjects as? [URL] ?? [])
+        ) else {
+            return unavailableSnapshot(root: root, message: "Configuration directory could not be enumerated.")
+        }
+        let files = (enumerator.allObjects as? [URL] ?? [])
             .filter { $0.pathExtension == FinderActionConstants.configExtension }
             .sorted { $0.path < $1.path }
 
@@ -49,6 +59,14 @@ public struct ActionCatalogLoader: Sendable {
             return comparison == .orderedSame ? $0.id < $1.id : comparison == .orderedAscending
         }
         return ActionSnapshot(configRoot: root.path, actions: actions, diagnostics: diagnostics)
+    }
+
+    private func unavailableSnapshot(root: URL, message: String) -> ActionSnapshot {
+        ActionSnapshot(
+            configRoot: root.path,
+            actions: [],
+            diagnostics: [ActionDiagnostic(severity: .error, file: root.path, message: message)]
+        )
     }
 
     private func relativePath(of file: URL, beneath root: URL) -> String {

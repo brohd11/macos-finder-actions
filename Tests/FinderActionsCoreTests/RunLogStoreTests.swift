@@ -121,6 +121,47 @@ final class RunnerClientCompletionTests: XCTestCase {
     }
 }
 
+final class CatalogSnapshotReplyTests: XCTestCase {
+    func testSecureCodingRoundTripPreservesSnapshot() throws {
+        let snapshot = ActionSnapshot(
+            configRoot: "/tmp/actions",
+            actions: [FinderAction(
+                id: "copy",
+                name: "Copy",
+                command: "true",
+                configPath: "/tmp/actions/copy.finder-action"
+            )],
+            diagnostics: []
+        )
+        let reply = try CatalogSnapshotReply(snapshot: snapshot)
+        let archived = try NSKeyedArchiver.archivedData(withRootObject: reply, requiringSecureCoding: true)
+        let decodedReply = try XCTUnwrap(
+            NSKeyedUnarchiver.unarchivedObject(ofClass: CatalogSnapshotReply.self, from: archived)
+        )
+
+        let decoded = try decodedReply.decodedSnapshot()
+        XCTAssertEqual(decoded.configRoot, snapshot.configRoot)
+        XCTAssertEqual(decoded.actions.map(\.id), ["copy"])
+        XCTAssertTrue(decoded.diagnostics.isEmpty)
+    }
+
+    func testMissingSnapshotSurfacesRunnerMessage() {
+        let reply = CatalogSnapshotReply(snapshotData: nil, message: "Catalog unavailable for testing.")
+
+        XCTAssertThrowsError(try reply.decodedSnapshot()) { error in
+            XCTAssertEqual(error.localizedDescription, "Catalog unavailable for testing.")
+        }
+    }
+
+    func testInvalidSnapshotDataIsRejected() {
+        let reply = CatalogSnapshotReply(snapshotData: Data("not-json".utf8))
+
+        XCTAssertThrowsError(try reply.decodedSnapshot()) { error in
+            XCTAssertTrue(error.localizedDescription.contains("invalid action catalog"))
+        }
+    }
+}
+
 final class MenuActionPayloadTests: XCTestCase {
     func testRegistryReturnsCompleteInvocationForTag() {
         let invocation = FinderInvocation(

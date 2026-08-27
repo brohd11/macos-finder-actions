@@ -6,13 +6,15 @@ guard let machServiceName = RuntimeConfiguration.machServiceName() else {
     exit(78)
 }
 
-let catalog = CatalogCoordinator(configRoot: FinderActionConstants.configRoot)
+let settingsStore = FinderActionsSettingsStore()
+let catalog = CatalogCoordinator(configRoot: FinderActionConstants.defaultConfigRoot)
 let logStore = RunLogStore(directory: FinderActionConstants.runLogDirectory)
 let service = RunnerService(
     machServiceName: machServiceName,
     catalog: catalog,
     executor: ScriptExecutor(logStore: logStore),
-    logStore: logStore
+    logStore: logStore,
+    settingsStore: settingsStore
 )
 service.resume()
 RunLoop.main.run()
