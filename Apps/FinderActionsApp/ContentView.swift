@@ -41,8 +41,9 @@ struct ContentView: View {
                 title: "Background runner",
                 value: state.runnerStatus,
                 positive: state.runnerAvailable,
-                button: state.runnerRegistered ? "Disable" : "Enable",
-                action: state.runnerRegistered ? state.unregisterRunner : state.registerRunner
+                button: state.runnerControlTitle,
+                action: state.controlRunner,
+                buttonDisabled: state.runnerControlDisabled
             )
             statusCard(
                 title: "Failure notifications",

@@ -28,7 +28,7 @@ Depending on your macOS version you either select "Open Anyway" when trying to o
 ```
 xattr -dr com.apple.quarantine "/Applications/Finder Actions.app"
 ```
-The dashboard will also ask to enable the Finder extension, as well as allowing background processes for the script execution.
+The dashboard also lets you enable a per-user background runner for script execution and open the Finder extension settings.
 I also find allowing the app "Full Disk Access", will stop any permission popups that occur after a reboot.
 
 Alot of access, but it's open source. Feel free to inspect for shenanigans. If you don't want to download and de-quarantine, you can build with Xcode.
@@ -145,3 +145,6 @@ Edit `Config/Local.xcconfig` with your team ID and a unique reverse-DNS prefix, 
 
 The bundle identifiers and background runner Mach service are derived from
 `BUNDLE_ID_PREFIX`; no App Group or provisioning profile is required.
+
+The background runner is stored as a per-user LaunchAgent in `~/Library/LaunchAgents`.
+Disable it from the dashboard before permanently removing the app.

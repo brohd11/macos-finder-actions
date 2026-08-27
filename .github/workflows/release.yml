@@ -18,7 +18,8 @@ concurrency:
 
 env:
   BUNDLE_ID_PREFIX: com.brohd
-  MACH_SERVICE_NAME: group.com.brohd.FinderActions.runner
+  MACH_SERVICE_NAME: com.brohd.FinderActions.runner
+  LEGACY_MACH_SERVICE_NAME: group.com.brohd.FinderActions.runner
 
 jobs:
   build:
@@ -91,6 +92,7 @@ jobs:
             DEVELOPMENT_TEAM= \
             "BUNDLE_ID_PREFIX=$BUNDLE_ID_PREFIX" \
             "MACH_SERVICE_NAME=$MACH_SERVICE_NAME" \
+            "LEGACY_MACH_SERVICE_NAME=$LEGACY_MACH_SERVICE_NAME" \
             ONLY_ACTIVE_ARCH=YES \
             ARCHS=arm64 \
             test
@@ -109,6 +111,7 @@ jobs:
             DEVELOPMENT_TEAM= \
             "BUNDLE_ID_PREFIX=$BUNDLE_ID_PREFIX" \
             "MACH_SERVICE_NAME=$MACH_SERVICE_NAME" \
+            "LEGACY_MACH_SERVICE_NAME=$LEGACY_MACH_SERVICE_NAME" \
             ONLY_ACTIVE_ARCH=NO \
             'ARCHS=arm64 x86_64' \
             build
@@ -161,6 +164,7 @@ jobs:
           app="$RUNNER_TEMP/Package/Finder Actions.app"
           extension="$app/Contents/PlugIns/FinderActionsFinderSync.appex"
           runner="$app/Contents/Library/LoginItems/FinderActionsRunner.app"
+          legacy_agent="$app/Contents/Library/LaunchAgents/com.finderactions.runner.plist"
 
           require_universal() {
             local binary="$1"
@@ -193,6 +197,9 @@ jobs:
           assert_plist_value "$app/Contents/Info.plist" MachServiceName "$MACH_SERVICE_NAME"
           assert_plist_value "$extension/Contents/Info.plist" MachServiceName "$MACH_SERVICE_NAME"
           assert_plist_value "$runner/Contents/Info.plist" MachServiceName "$MACH_SERVICE_NAME"
+          assert_plist_value "$legacy_agent" Label "$LEGACY_MACH_SERVICE_NAME"
+          assert_plist_value "$legacy_agent" BundleProgram "Contents/Library/LoginItems/FinderActionsRunner.app/Contents/MacOS/FinderActionsRunner"
+          assert_plist_value "$legacy_agent" "MachServices:$LEGACY_MACH_SERVICE_NAME" true
 
           for plist in "$app/Contents/Info.plist" "$extension/Contents/Info.plist" "$runner/Contents/Info.plist"; do
             assert_plist_value "$plist" CFBundleShortVersionString "$RELEASE_VERSION"
@@ -292,7 +299,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.build.outputs.version }}
         run: |
           set -euo pipefail
-          release_note='This build is ad-hoc signed and is not notarized. On first launch, approve it under System Settings > Privacy & Security, then enable the background runner and Finder extension. Protected locations may require Full Disk Access for the embedded Finder extension, and macOS may request privacy permissions again after an update.'
+          release_note='This build is ad-hoc signed and is not notarized. On first launch, approve it under System Settings > Privacy & Security, then enable the per-user background runner in the dashboard and enable the Finder extension. Protected locations may require Full Disk Access for the embedded Finder extension, and macOS may request privacy permissions again after an update.'
           gh release create "$GITHUB_REF_NAME" \
             'release-assets/Finder-Actions.zip#Finder Actions for macOS (universal, ad-hoc signed)' \
             'release-assets/Finder-Actions.zip.sha256#SHA-256 checksum' \

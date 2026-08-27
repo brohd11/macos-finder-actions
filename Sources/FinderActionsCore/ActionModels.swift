@@ -5,7 +5,7 @@ public enum FinderActionConstants {
     public static let configDirectoryName = "finder-actions"
     public static let configExtension = "finder-action"
     public static let runDirectoryName = "runs"
-    public static let launchAgentPlistName = "com.finderactions.runner.plist"
+    public static let legacyLaunchAgentPlistName = "com.finderactions.runner.plist"
 
     public static var configRoot: URL {
         FileManager.default.homeDirectoryForCurrentUser
@@ -19,6 +19,13 @@ public enum FinderActionConstants {
             .appendingPathComponent("Application Support", isDirectory: true)
             .appendingPathComponent("Finder Actions", isDirectory: true)
             .appendingPathComponent(runDirectoryName, isDirectory: true)
+    }
+
+    public static func launchAgentPlistURL(serviceName: String) -> URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library", isDirectory: true)
+            .appendingPathComponent("LaunchAgents", isDirectory: true)
+            .appendingPathComponent("\(serviceName).plist", isDirectory: false)
     }
 }
 

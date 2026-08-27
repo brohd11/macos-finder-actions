@@ -9,11 +9,18 @@ checksum_name="Finder-Actions.zip.sha256"
 release_base_url="https://github.com/$repository/releases/latest/download"
 install_dir="${FINDER_ACTIONS_INSTALL_DIR:-/Applications}"
 target_app="$install_dir/$app_name"
+direct_service_name="com.brohd.FinderActions.runner"
+launch_domain="gui/$(id -u)"
+direct_service_target="$launch_domain/$direct_service_name"
+direct_agent_dir="$HOME/Library/LaunchAgents"
+direct_agent_plist="$direct_agent_dir/$direct_service_name.plist"
 
 download_dir=""
 stage_dir=""
 backup_app=""
 replacement_started=0
+direct_agent_configured=0
+direct_agent_stopped=0
 
 say() {
     printf '%s\n' "$*"
@@ -32,10 +39,30 @@ cleanup() {
     status=$?
     trap - EXIT
 
-    if [ "$replacement_started" -eq 1 ] && ! path_exists "$target_app" && path_exists "$backup_app"; then
+    if [ "$status" -ne 0 ] && [ "$replacement_started" -eq 1 ] && path_exists "$backup_app"; then
+        if path_exists "$target_app"; then
+            failed_app="$stage_dir/Failed Finder Actions.app"
+            if ! mv "$target_app" "$failed_app"; then
+                printf 'finder-actions installer: could not move the failed replacement out of %s\n' "$target_app" >&2
+                stage_dir=""
+            fi
+        fi
+        if ! path_exists "$target_app" && ! mv "$backup_app" "$target_app"; then
+            printf 'finder-actions installer: could not restore the previous app from %s\n' "$backup_app" >&2
+            stage_dir=""
+        fi
+    elif [ "$replacement_started" -eq 1 ] && ! path_exists "$target_app" && path_exists "$backup_app"; then
         if ! mv "$backup_app" "$target_app"; then
             printf 'finder-actions installer: could not restore the previous app from %s\n' "$backup_app" >&2
             stage_dir=""
+        fi
+    fi
+
+    if [ "$status" -ne 0 ] && [ "$direct_agent_stopped" -eq 1 ] && path_exists "$direct_agent_plist"; then
+        runner_executable="$target_app/Contents/Library/LoginItems/FinderActionsRunner.app/Contents/MacOS/FinderActionsRunner"
+        if path_exists "$runner_executable"; then
+            plutil -replace ProgramArguments.0 -string "$runner_executable" "$direct_agent_plist" 2>/dev/null || true
+            launchctl bootstrap "$launch_domain" "$direct_agent_plist" 2>/dev/null || true
         fi
     fi
 
@@ -61,7 +88,7 @@ case "$macos_major" in
 esac
 [ "$macos_major" -ge 13 ] || fail "Finder Actions requires macOS 13 or newer (found $macos_version)."
 
-for required_command in curl ditto shasum codesign mktemp; do
+for required_command in curl ditto shasum codesign id launchctl mktemp plutil; do
     command -v "$required_command" >/dev/null 2>&1 || fail "required command not found: $required_command"
 done
 [ -x /usr/libexec/PlistBuddy ] || fail "required command not found: /usr/libexec/PlistBuddy"
@@ -110,6 +137,20 @@ staged_app="$stage_dir/$app_name"
 ditto "$source_app" "$staged_app"
 codesign --verify --deep --strict "$staged_app" || fail "the staged app failed code-signature verification."
 
+if path_exists "$direct_agent_plist"; then
+    [ ! -L "$direct_agent_plist" ] || fail "refusing to modify symbolic link $direct_agent_plist."
+    direct_label="$(/usr/libexec/PlistBuddy -c 'Print :Label' "$direct_agent_plist" 2>/dev/null || true)"
+    [ "$direct_label" = "$direct_service_name" ] ||
+        fail "$direct_agent_plist is not the expected Finder Actions LaunchAgent."
+    direct_agent_configured=1
+    if launchctl print "$direct_service_target" >/dev/null 2>&1; then
+        say "Stopping the background runner for the update..."
+        launchctl bootout "$direct_service_target" ||
+            fail "could not stop the background runner before updating."
+        direct_agent_stopped=1
+    fi
+fi
+
 if path_exists "$target_app"; then
     say "Replacing the existing app..."
     backup_app="$stage_dir/Previous Finder Actions.app"
@@ -120,6 +161,21 @@ else
 fi
 
 mv "$staged_app" "$target_app" || fail "could not move Finder Actions into $install_dir."
+
+if [ "$direct_agent_configured" -eq 1 ]; then
+    runner_executable="$target_app/Contents/Library/LoginItems/FinderActionsRunner.app/Contents/MacOS/FinderActionsRunner"
+    [ -x "$runner_executable" ] || fail "the installed app is missing its background runner."
+    plutil -replace ProgramArguments.0 -string "$runner_executable" "$direct_agent_plist" ||
+        fail "could not update the background runner path."
+    chmod 644 "$direct_agent_plist"
+    plutil -lint "$direct_agent_plist" >/dev/null ||
+        fail "the updated background runner registration is invalid."
+    say "Restarting the background runner..."
+    launchctl bootstrap "$launch_domain" "$direct_agent_plist" ||
+        fail "could not restart the background runner after updating."
+    direct_agent_stopped=0
+fi
+
 replacement_started=0
 
 say "Installed Finder Actions at $target_app"

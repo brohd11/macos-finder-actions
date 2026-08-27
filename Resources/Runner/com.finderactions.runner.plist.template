@@ -3,14 +3,14 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>@MACH_SERVICE_NAME@</string>
+	<string>@LEGACY_MACH_SERVICE_NAME@</string>
 	<key>BundleProgram</key>
 	<string>Contents/Library/LoginItems/FinderActionsRunner.app/Contents/MacOS/FinderActionsRunner</string>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>MachServices</key>
 	<dict>
-		<key>@MACH_SERVICE_NAME@</key>
+		<key>@LEGACY_MACH_SERVICE_NAME@</key>
 		<true/>
 	</dict>
 	<key>ProcessType</key>

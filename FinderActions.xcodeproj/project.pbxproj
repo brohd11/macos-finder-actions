@@ -12,6 +12,7 @@
 		BC0000000000000000000004 /* ActionMatching.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000004; };
 		BC0000000000000000000005 /* RunnerXPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000005; };
 		BC0000000000000000000006 /* RunLogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000006; };
+		BC0000000000000000000007 /* LaunchAgentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000007; };
 		BA0000000000000000000001 /* FinderActionsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000001; };
 		BA0000000000000000000002 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000002; };
 		BA0000000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000003; };
@@ -35,6 +36,7 @@
 		BT0000000000000000000004 /* libFinderActionsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000001; };
 		BT0000000000000000000005 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F00000000000000000000004; };
 		BT0000000000000000000006 /* MenuActionPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00000000000000000000002; };
+		BT0000000000000000000007 /* LaunchAgentManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000004; };
 		CP0000000000000000000001 /* FinderActionsFinderSync.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000003; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
 		CP0000000000000000000002 /* FinderActionsRunner.app in Embed Login Items */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000004; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -60,6 +62,7 @@
 		C00000000000000000000004 /* ActionMatching.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionMatching.swift; sourceTree = "<group>"; };
 		C00000000000000000000005 /* RunnerXPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerXPC.swift; sourceTree = "<group>"; };
 		C00000000000000000000006 /* RunLogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunLogs.swift; sourceTree = "<group>"; };
+		C00000000000000000000007 /* LaunchAgentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentManager.swift; sourceTree = "<group>"; };
 		A00000000000000000000001 /* FinderActionsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderActionsApp.swift; sourceTree = "<group>"; };
 		A00000000000000000000002 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		A00000000000000000000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -72,6 +75,7 @@
 		T00000000000000000000001 /* ActionConfigParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionConfigParserTests.swift; sourceTree = "<group>"; };
 		T00000000000000000000002 /* ActionMatchingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionMatchingTests.swift; sourceTree = "<group>"; };
 		T00000000000000000000003 /* RunLogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunLogStoreTests.swift; sourceTree = "<group>"; };
+		T00000000000000000000004 /* LaunchAgentManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentManagerTests.swift; sourceTree = "<group>"; };
 		Q00000000000000000000001 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
 		Q00000000000000000000002 /* Local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Local.xcconfig.example; sourceTree = "<group>"; };
 		P00000000000000000000001 /* App Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "App Info.plist"; path = App/Info.plist; sourceTree = "<group>"; };
@@ -100,12 +104,12 @@
 
 /* Begin PBXGroup section */
 		GROOT00000000000000000001 = {isa = PBXGroup; children = (GCORE00000000000000000001, GAPPS00000000000000000001, GTEST00000000000000000001, GRES00000000000000000001, GCONFIG000000000000000001, GFRAME000000000000000001, GPROD0000000000000000001, ); sourceTree = "<group>"; };
-		GCORE00000000000000000001 /* FinderActionsCore */ = {isa = PBXGroup; children = (C00000000000000000000001, C00000000000000000000002, C00000000000000000000003, C00000000000000000000004, C00000000000000000000005, C00000000000000000000006, ); name = FinderActionsCore; path = Sources/FinderActionsCore; sourceTree = SOURCE_ROOT; };
+		GCORE00000000000000000001 /* FinderActionsCore */ = {isa = PBXGroup; children = (C00000000000000000000001, C00000000000000000000002, C00000000000000000000003, C00000000000000000000004, C00000000000000000000005, C00000000000000000000006, C00000000000000000000007, ); name = FinderActionsCore; path = Sources/FinderActionsCore; sourceTree = SOURCE_ROOT; };
 		GAPPS00000000000000000001 /* Apps */ = {isa = PBXGroup; children = (GAPP000000000000000000001, GEXT000000000000000000001, GRUN000000000000000000001, ); path = Apps; sourceTree = SOURCE_ROOT; };
 		GAPP000000000000000000001 /* FinderActionsApp */ = {isa = PBXGroup; children = (A00000000000000000000001, A00000000000000000000002, A00000000000000000000003, ); path = FinderActionsApp; sourceTree = "<group>"; };
 		GEXT000000000000000000001 /* FinderSyncExtension */ = {isa = PBXGroup; children = (E00000000000000000000001, E00000000000000000000002, ); path = FinderSyncExtension; sourceTree = "<group>"; };
 		GRUN000000000000000000001 /* FinderActionsRunner */ = {isa = PBXGroup; children = (R00000000000000000000001, R00000000000000000000002, R00000000000000000000003, R00000000000000000000004, ); path = FinderActionsRunner; sourceTree = "<group>"; };
-		GTEST00000000000000000001 /* Tests */ = {isa = PBXGroup; children = (T00000000000000000000001, T00000000000000000000002, T00000000000000000000003, ); name = FinderActionsCoreTests; path = Tests/FinderActionsCoreTests; sourceTree = SOURCE_ROOT; };
+		GTEST00000000000000000001 /* Tests */ = {isa = PBXGroup; children = (T00000000000000000000001, T00000000000000000000002, T00000000000000000000003, T00000000000000000000004, ); name = FinderActionsCoreTests; path = Tests/FinderActionsCoreTests; sourceTree = SOURCE_ROOT; };
 		GRES00000000000000000001 /* Resources */ = {isa = PBXGroup; children = (P00000000000000000000001, P00000000000000000000002, P00000000000000000000003, GENT000000000000000000001, P00000000000000000000007, ); path = Resources; sourceTree = SOURCE_ROOT; };
 		GENT000000000000000000001 /* Entitlements */ = {isa = PBXGroup; children = (P00000000000000000000005, ); path = Entitlements; sourceTree = "<group>"; };
 		GCONFIG000000000000000001 /* Config */ = {isa = PBXGroup; children = (Q00000000000000000000001, Q00000000000000000000002, ); path = Config; sourceTree = SOURCE_ROOT; };
@@ -133,15 +137,15 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		SHELL00000000000000000001 /* Generate LaunchAgent */ = {isa = PBXShellScriptBuildPhase; buildActionMask = 2147483647; files = (); inputPaths = ("$(SRCROOT)/Resources/Runner/com.finderactions.runner.plist.template", ); name = "Generate LaunchAgent"; outputPaths = ("$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchAgents/com.finderactions.runner.plist", ); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "set -eu\noutput=\"${TARGET_BUILD_DIR}/${CONTENTS_FOLDER_PATH}/Library/LaunchAgents/com.finderactions.runner.plist\"\n/bin/mkdir -p \"$(/usr/bin/dirname \"${output}\")\"\n/usr/bin/sed \"s|@MACH_SERVICE_NAME@|${MACH_SERVICE_NAME}|g\" \"${SRCROOT}/Resources/Runner/com.finderactions.runner.plist.template\" > \"${output}\"\n/usr/bin/plutil -lint \"${output}\"\n"; };
+		SHELL00000000000000000001 /* Generate Legacy LaunchAgent */ = {isa = PBXShellScriptBuildPhase; buildActionMask = 2147483647; files = (); inputPaths = ("$(SRCROOT)/Resources/Runner/com.finderactions.runner.plist.template", ); name = "Generate Legacy LaunchAgent"; outputPaths = ("$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Library/LaunchAgents/com.finderactions.runner.plist", ); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/sh; shellScript = "set -eu\noutput=\"${TARGET_BUILD_DIR}/${CONTENTS_FOLDER_PATH}/Library/LaunchAgents/com.finderactions.runner.plist\"\n/bin/mkdir -p \"$(/usr/bin/dirname \"${output}\")\"\n/usr/bin/sed \"s|@LEGACY_MACH_SERVICE_NAME@|${LEGACY_MACH_SERVICE_NAME}|g\" \"${SRCROOT}/Resources/Runner/com.finderactions.runner.plist.template\" > \"${output}\"\n/usr/bin/plutil -lint \"${output}\"\n"; };
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		PS0000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BC0000000000000000000001, BC0000000000000000000002, BC0000000000000000000003, BC0000000000000000000004, BC0000000000000000000005, BC0000000000000000000006, ); runOnlyForDeploymentPostprocessing = 0; };
+		PS0000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BC0000000000000000000001, BC0000000000000000000002, BC0000000000000000000003, BC0000000000000000000004, BC0000000000000000000005, BC0000000000000000000006, BC0000000000000000000007, ); runOnlyForDeploymentPostprocessing = 0; };
 		PS0000000000000000000002 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BA0000000000000000000001, BA0000000000000000000002, BA0000000000000000000003, ); runOnlyForDeploymentPostprocessing = 0; };
 		PS0000000000000000000003 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BE0000000000000000000001, BE0000000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
 		PS0000000000000000000004 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BR0000000000000000000001, BR0000000000000000000002, BR0000000000000000000003, BR0000000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
-		PS0000000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BT0000000000000000000001, BT0000000000000000000002, BT0000000000000000000003, BT0000000000000000000006, ); runOnlyForDeploymentPostprocessing = 0; };
+		PS0000000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (BT0000000000000000000001, BT0000000000000000000002, BT0000000000000000000003, BT0000000000000000000006, BT0000000000000000000007, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
