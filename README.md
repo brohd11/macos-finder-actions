@@ -11,7 +11,10 @@ Benefits over quick actions:
 - actions disappear when the selection count, file kind, or extension does not match
 - empty-space/background and Finder sidebar actions are supported
 
-Unlike Nemo, we don't have the ability to change where an item appears.
+Unlike Nemo, we don't have the ability to change where an item appears. Finder only exposes
+three menus to an extension: right-click on items, right-click on empty space, and right-click
+in the sidebar. The path bar and the toolbar's `⋯` Actions button are off limits — see
+[Platform caveats](#platform-caveats).
 
 ## Install
 
@@ -150,6 +153,42 @@ uses its supported contextual-menu API as a personal/open-source utility and doe
 the Mac App Store. Ordinary local folders and mounted volumes are monitored from `/`; virtual
 Finder locations such as Recents and saved searches remain best-effort because Finder decides
 whether their URLs belong to a monitored location.
+
+### Where actions can appear
+
+Finder hands an extension exactly four menu kinds, and no more. Three of them are wired up:
+
+- right-click on one or more selected items
+- right-click on a window's empty space (the background)
+- right-click on a sidebar item
+
+That mapping lives in `Apps/FinderSyncExtension/FinderSync.swift`.
+
+**The path bar cannot be supported.** There is no menu kind for it. Right-clicking a folder
+chip in the path bar does not call the extension at all, so there is nothing to hook — this is
+a missing API, not a missing feature here.
+
+**The toolbar's `⋯` Actions button cannot be supported either.** Finder builds that menu
+itself and does not consult Finder Sync extensions. Quick Actions and Services show up there;
+these actions do not.
+
+The fourth kind, `FIMenuKindToolbarItemMenu`, *is* usable but is deliberately left unhandled —
+it would put a Finder Actions button of our own in the toolbar, which the user then has to add
+by hand through View → Customize Toolbar. If you want it, it needs the `toolbarItemName`,
+`toolbarItemImage`, and `toolbarItemToolTip` overrides plus a case in `menu(for:)`, which
+currently returns `nil` for that kind.
+
+If a future macOS changes any of this, you can check for yourself rather than take my word for
+it. Run:
+
+```sh
+/usr/bin/log stream --predicate 'subsystem BEGINSWITH "com.brohd.FinderActions"' --style compact
+```
+
+then right-click a path bar chip, or click the `⋯` button. A `Finder requested menu kind=` line
+means Finder called the extension; silence means it didn't. Use the full `/usr/bin/log` path —
+if you have a `log` alias or shell function it will shadow the real binary, fail with
+`too many arguments`, and look exactly like no output.
 
 ## Build from source
 
