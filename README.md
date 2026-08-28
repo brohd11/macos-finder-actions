@@ -31,10 +31,12 @@ Depending on your macOS version you either select "Open Anyway" when trying to o
 ```
 xattr -dr com.apple.quarantine "/Applications/Finder Actions.app"
 ```
-The dashboard also lets you enable a per-user background runner for script execution and open the Finder extension settings.
-I also find allowing the app "Full Disk Access", will stop any permission popups that occur after a reboot.
+The dashboard will have you enable the Finder Extension as well as a per-user background runner for script execution.
+If you are having permission check popups occur after reboot, allowing the app "Full Disk Access", can help with that, otherwise it should be a once per reboot prompt.
 
-Alot of access, but it's open source. Feel free to inspect for shenanigans. If you don't want to download and de-quarantine, you can build with Xcode.
+Note, if your executed scripts need access for their process ie. using osascript to control Finder, the runner will ask for that permission too.
+
+If you don't want to download and de-quarantine, you can build with Xcode or the included build script.
 
 
 ## Action files
@@ -83,7 +85,7 @@ The app executes the command as:
 /bin/zsh -c <Exec> <action-id> <selected-path-1> <selected-path-2> ...
 ```
 
-Inside `Exec`, selected paths are therefore `"$@"`, and `$0` is the action ID. Paths are
+Inside `Exec`, selected paths are `"$@"`, and `$0` is the action ID. Paths are
 never substituted into the command source, so quotes, whitespace, Unicode, and newlines
 remain individual arguments. Add `"$@"` explicitly when the called script should receive
 the selection:
@@ -92,7 +94,7 @@ the selection:
 Exec="$FINDER_ACTION_CONFIG_DIR/scripts/resize.sh" --max 2000 "$@"
 ```
 
-Each invocation also receives:
+Each process also has access to:
 
 - `FINDER_ACTION_ID`
 - `FINDER_ACTION_NAME`
@@ -111,25 +113,34 @@ For a background action, use `Selection=none`; it receives no positional paths a
 selection and on the folder background.
 
 See [`Examples`](Examples) for copy-path and new-file configurations. Existing shell
-scripts can be called unchanged from an `Exec` line; any guard blocks they carry become
-redundant because Finder Actions filters the menu before launch.
+scripts can be called unchanged from an `Exec` line.
+
+### Where actions can appear
+
+Finder hands an extension exactly four menu kinds, and no more. Three of them are wired up:
+
+- right-click on one or more selected items
+- right-click on a window's empty space (the background)
+- right-click on a sidebar item
+
+At this time:
+- The path bar cannot be supported
+- The toolbar's `⋯` Actions button cannot be supported
+
+These items do show up via quick actions if needed.
+
 
 ### Symlinks and dotfiles
 
 The config directory is read recursively with symlinks followed, so it can be managed
 by GNU Stow or any other dotfiles tool. All three shapes work:
 
-- `~/.config/finder-actions` itself a symlink to a directory in your repo (what Stow
-  creates when the target does not exist yet)
-- individual `.finder-action` files symlinked into a real directory (what Stow creates
-  when the target directory already exists)
+- `~/.config/finder-actions` itself a symlink to a directory
+- individual `.finder-action` files symlinked into a real directory
 - symlinked subdirectories, for nested `Group` menus
 
-Edits are noticed through the link, so saving a file in your repo updates the Finder
-menu within about a second.
-
-An action's ID is its path relative to the config directory, so IDs — and therefore run
-history — stay stable whichever of those layouts you use. `FINDER_ACTION_CONFIG` and
+An action's ID is its path relative to the config directory so IDs and run
+history stay stable whichever of those layouts you use. `FINDER_ACTION_CONFIG` and
 `FINDER_ACTION_CONFIG_DIR` are the *resolved* paths, so a helper script stored beside an
 action in your repo is found:
 
@@ -141,9 +152,7 @@ Broken links are reported in the dashboard's **Problems** tab and skipped; the r
 your actions keep working. Symlink cycles are detected and skipped. Hidden entries
 (`.git`, `.DS_Store`) are ignored.
 
-Because symlinks work, the **Choose…** directory picker is no longer needed to keep
-actions in a dotfiles repo — stow into the default location and press **Reset**. The
-picker remains for pointing at a directory you would rather not symlink.
+The **Choose…** directory picker is for pointing config at a directory you would rather not symlink.
 
 
 ## Platform caveats
@@ -154,70 +163,23 @@ the Mac App Store. Ordinary local folders and mounted volumes are monitored from
 Finder locations such as Recents and saved searches remain best-effort because Finder decides
 whether their URLs belong to a monitored location.
 
-### Where actions can appear
-
-Finder hands an extension exactly four menu kinds, and no more. Three of them are wired up:
-
-- right-click on one or more selected items
-- right-click on a window's empty space (the background)
-- right-click on a sidebar item
-
-That mapping lives in `Apps/FinderSyncExtension/FinderSync.swift`.
-
-**The path bar cannot be supported.** There is no menu kind for it. Right-clicking a folder
-chip in the path bar does not call the extension at all, so there is nothing to hook — this is
-a missing API, not a missing feature here.
-
-**The toolbar's `⋯` Actions button cannot be supported either.** Finder builds that menu
-itself and does not consult Finder Sync extensions. Quick Actions and Services show up there;
-these actions do not.
-
-The fourth kind, `FIMenuKindToolbarItemMenu`, *is* usable but is deliberately left unhandled —
-it would put a Finder Actions button of our own in the toolbar, which the user then has to add
-by hand through View → Customize Toolbar. If you want it, it needs the `toolbarItemName`,
-`toolbarItemImage`, and `toolbarItemToolTip` overrides plus a case in `menu(for:)`, which
-currently returns `nil` for that kind.
-
-If a future macOS changes any of this, you can check for yourself rather than take my word for
-it. Run:
-
-```sh
-/usr/bin/log stream --predicate 'subsystem BEGINSWITH "com.brohd.FinderActions"' --style compact
-```
-
-then right-click a path bar chip, or click the `⋯` button. A `Finder requested menu kind=` line
-means Finder called the extension; silence means it didn't. Use the full `/usr/bin/log` path —
-if you have a `log` alias or shell function it will shadow the real binary, fail with
-`too many arguments`, and look exactly like no output.
 
 ## Build from source
 
 - macOS 13 or newer
 - Full Xcode (Command Line Tools alone cannot package a Finder extension)
 
-No Apple developer account is needed. Builds are ad-hoc signed by default, exactly
-like the published release:
+No Apple developer account is needed. Builds are ad-hoc signed by default.
 
 ```sh
 ./build.sh
 ```
 
 That produces `dist/Finder-Actions.zip` and its checksum, running the same
-`scripts/package.sh` the release workflow uses — so a local build is verified the same
-way CI verifies a release (universal binaries, bundle identifiers, ad-hoc signature,
-no provisioning profile, sandbox entitlements). Pass an explicit version and build
+`scripts/package.sh` the release workflow uses. Pass an explicit version and build
 number if you want them: `./build.sh 0.2.0 12`.
 
-To work in Xcode instead:
-
-1. Open `FinderActions.xcodeproj` and run the **FinderActions** scheme.
-2. In the dashboard, enable the background runner.
-3. Choose **Manage** beside Finder extension and enable Finder Actions in System Settings.
-4. Allow failure notifications if desired.
-5. Put one or more `.finder-action` files below `~/.config/finder-actions/`, or use
-   **Choose…** in the Actions tab to select another configuration directory.
-
-`swift test` runs the shared-core test suite without Xcode.
+`swift test` runs the shared-core test suite.
 
 The bundle identifiers and background runner Mach service are derived from
 `BUNDLE_ID_PREFIX`; no App Group or provisioning profile is required. If you do have
