@@ -85,6 +85,16 @@ require_universal() {
     [[ " $architectures " == *' x86_64 '* ]]
 }
 
+require_icon() {
+    local bundle="$1" name="$2" icon
+    icon="$bundle/Contents/Resources/$name.icns"
+    if [ ! -s "$icon" ]; then
+        echo "$bundle: $name.icns is missing or empty; check the Resources build phase." >&2
+        exit 1
+    fi
+    echo "$icon: $(stat -f %z "$icon") bytes"
+}
+
 assert_plist_value() {
     local plist="$1" key="$2" expected="$3" actual
     actual="$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist")"
@@ -106,6 +116,14 @@ for plist in "$app/Contents/Info.plist" "$extension/Contents/Info.plist" "$runne
     assert_plist_value "$plist" CFBundleShortVersionString "$version"
     assert_plist_value "$plist" CFBundleVersion "$build_number"
 done
+
+assert_plist_value "$app/Contents/Info.plist" CFBundleIconFile FinderActions
+assert_plist_value "$extension/Contents/Info.plist" CFBundleIconFile FinderActionsFinderSync
+assert_plist_value "$runner/Contents/Info.plist" CFBundleIconFile FinderActionsRunner
+
+require_icon "$app" FinderActions
+require_icon "$extension" FinderActionsFinderSync
+require_icon "$runner" FinderActionsRunner
 
 if [ -e "$app/Contents/Library/LaunchAgents" ]; then
     echo 'The bundle must not ship a LaunchAgents directory; the app writes one per user.' >&2

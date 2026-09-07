@@ -43,6 +43,9 @@
 		BT0000000000000000000012 /* ScriptInvocationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T00000000000000000000009; };
 		CP0000000000000000000001 /* FinderActionsFinderSync.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000003; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
 		CP0000000000000000000002 /* FinderActionsRunner.app in Embed Login Items */ = {isa = PBXBuildFile; fileRef = PR0000000000000000000004; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
+		BI0000000000000000000001 /* FinderActions.icns in Resources */ = {isa = PBXBuildFile; fileRef = I00000000000000000000001; };
+		BI0000000000000000000002 /* FinderActionsFinderSync.icns in Resources */ = {isa = PBXBuildFile; fileRef = I00000000000000000000002; };
+		BI0000000000000000000003 /* FinderActionsRunner.icns in Resources */ = {isa = PBXBuildFile; fileRef = I00000000000000000000003; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -92,6 +95,12 @@
 		P00000000000000000000002 /* FinderSync Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "FinderSync Info.plist"; path = FinderSync/Info.plist; sourceTree = "<group>"; };
 		P00000000000000000000003 /* Runner Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Runner Info.plist"; path = Runner/Info.plist; sourceTree = "<group>"; };
 		P00000000000000000000005 /* FinderSync.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FinderSync.entitlements; sourceTree = "<group>"; };
+		I00000000000000000000001 /* FinderActions.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = FinderActions.icns; sourceTree = "<group>"; };
+		I00000000000000000000002 /* FinderActionsFinderSync.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = FinderActionsFinderSync.icns; sourceTree = "<group>"; };
+		I00000000000000000000003 /* FinderActionsRunner.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = FinderActionsRunner.icns; sourceTree = "<group>"; };
+		I00000000000000000000004 /* FinderActions.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = FinderActions.svg; sourceTree = "<group>"; };
+		I00000000000000000000005 /* FinderActionsFinderSync.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = FinderActionsFinderSync.svg; sourceTree = "<group>"; };
+		I00000000000000000000006 /* FinderActionsRunner.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = FinderActionsRunner.svg; sourceTree = "<group>"; };
 		F00000000000000000000001 /* FinderSync.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FinderSync.framework; path = System/Library/Frameworks/FinderSync.framework; sourceTree = SDKROOT; };
 		F00000000000000000000003 /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		F00000000000000000000004 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
@@ -118,8 +127,9 @@
 		GEXT000000000000000000001 /* FinderSyncExtension */ = {isa = PBXGroup; children = (E00000000000000000000001, ); path = FinderSyncExtension; sourceTree = "<group>"; };
 		GRUN000000000000000000001 /* FinderActionsRunner */ = {isa = PBXGroup; children = (R00000000000000000000001, R00000000000000000000002, R00000000000000000000003, R00000000000000000000004, ); path = FinderActionsRunner; sourceTree = "<group>"; };
 		GTEST00000000000000000001 /* Tests */ = {isa = PBXGroup; children = (T00000000000000000000001, T00000000000000000000002, T00000000000000000000003, T00000000000000000000004, T00000000000000000000005, T00000000000000000000006, T00000000000000000000007, T00000000000000000000008, T00000000000000000000009, ); name = FinderActionsCoreTests; path = Tests/FinderActionsCoreTests; sourceTree = SOURCE_ROOT; };
-		GRES00000000000000000001 /* Resources */ = {isa = PBXGroup; children = (P00000000000000000000001, P00000000000000000000002, P00000000000000000000003, GENT000000000000000000001, ); path = Resources; sourceTree = SOURCE_ROOT; };
+		GRES00000000000000000001 /* Resources */ = {isa = PBXGroup; children = (P00000000000000000000001, P00000000000000000000002, P00000000000000000000003, GENT000000000000000000001, GICON00000000000000000001, ); path = Resources; sourceTree = SOURCE_ROOT; };
 		GENT000000000000000000001 /* Entitlements */ = {isa = PBXGroup; children = (P00000000000000000000005, ); path = Entitlements; sourceTree = "<group>"; };
+		GICON00000000000000000001 /* Icons */ = {isa = PBXGroup; children = (I00000000000000000000001, I00000000000000000000002, I00000000000000000000003, I00000000000000000000004, I00000000000000000000005, I00000000000000000000006, ); path = Icons; sourceTree = "<group>"; };
 		GCONFIG000000000000000001 /* Config */ = {isa = PBXGroup; children = (Q00000000000000000000001, Q00000000000000000000002, ); path = Config; sourceTree = SOURCE_ROOT; };
 		GFRAME000000000000000001 /* Frameworks */ = {isa = PBXGroup; children = (F00000000000000000000001, F00000000000000000000003, F00000000000000000000004, ); name = Frameworks; sourceTree = "<group>"; };
 		GPROD0000000000000000001 /* Products */ = {isa = PBXGroup; children = (PR0000000000000000000001, PR0000000000000000000002, PR0000000000000000000003, PR0000000000000000000004, PR0000000000000000000005, ); name = Products; sourceTree = "<group>"; };
@@ -138,9 +148,9 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		RES0000000000000000000002 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		RES0000000000000000000003 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		RES0000000000000000000004 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		RES0000000000000000000002 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (BI0000000000000000000001 /* FinderActions.icns in Resources */, ); runOnlyForDeploymentPostprocessing = 0; };
+		RES0000000000000000000003 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (BI0000000000000000000002 /* FinderActionsFinderSync.icns in Resources */, ); runOnlyForDeploymentPostprocessing = 0; };
+		RES0000000000000000000004 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (BI0000000000000000000003 /* FinderActionsRunner.icns in Resources */, ); runOnlyForDeploymentPostprocessing = 0; };
 		RES0000000000000000000005 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 

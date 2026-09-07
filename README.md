@@ -181,6 +181,10 @@ number if you want them: `./build.sh 0.2.0 12`.
 
 `swift test` runs the shared-core test suite.
 
+Each bundle's icon is generated from the vector source next to it in `Resources/Icons`.
+The `.icns` outputs are committed, so a normal build needs no icon tooling; rerun
+`scripts/make-icons.sh` after editing an SVG.
+
 The bundle identifiers and background runner Mach service are derived from
 `BUNDLE_ID_PREFIX`; no App Group or provisioning profile is required. If you do have
 an Apple development team and want Xcode to sign with it, copy

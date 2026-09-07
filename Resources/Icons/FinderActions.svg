@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b9dff"/>
+      <stop offset="1" stop-color="#3a2fa5"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="100" y="92" width="824" height="824" rx="185" fill="url(#plate)"/>
+
+  <path d="M274 318 H408 L456 372 H734 A22 22 0 0 1 756 394 V460 H252 V340 A22 22 0 0 1 274 318 Z"
+        fill="#ffffff" opacity="0.45"/>
+  <rect x="224" y="400" width="576" height="300" rx="32" fill="#ffffff"/>
+
+  <g fill="#3a2fa5">
+    <rect x="292" y="480" width="290" height="30" rx="15"/>
+    <rect x="292" y="550" width="208" height="30" rx="15"/>
+  </g>
+
+  <path d="M622 476 L622 610 L655 580 L680 635 L701 627 L676 574 L715 574 Z"
+        fill="#1f2433" stroke="#ffffff" stroke-width="16" stroke-linejoin="round"/>
+  <path d="M622 476 L622 610 L655 580 L680 635 L701 627 L676 574 L715 574 Z" fill="#1f2433"/>
+</svg>
