@@ -37,3 +37,9 @@ additional Finder-extension filesystem entitlements.
 
 The background runner is stored as a per-user LaunchAgent in `~/Library/LaunchAgents`.
 Disable it from the dashboard before permanently removing the app.
+
+## Releasing
+
+Releases are cut by pushing a `vMAJOR.MINOR.PATCH` tag on `main`. The release workflow runs `scripts/test.sh` (the Xcode test suite), then `scripts/package.sh` to build, sign, verify and archive `Finder-Actions.zip` with its `.sha256`. Release notes come from conventional commits via git-cliff, followed by `.github/release-notes.md`.
+
+`install.sh`, `.github/workflows/release.yml`, and `cliff.toml` are rendered from the shared templates in `sh-templates/mac-apps` by the monorepo's `render-mac.sh`; edit only the config block above `# ---- end config ----` in `install.sh` (the background-runner handling lives in its hooks).

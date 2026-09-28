@@ -1,4 +1,10 @@
-name: Build Ad-Hoc Release
+name: release
+
+# Shared macOS app release, rendered from sh-templates/mac-apps. The repo supplies:
+#   scripts/package.sh VERSION BUILD OUT_DIR   writes OUT_DIR/<name>.zip and <name>.zip.sha256
+#   scripts/test.sh                            optional; runs before packaging
+#   .github/release-notes.md                   optional; appended to the generated notes
+#   cliff.toml                                 rendered changelog policy
 
 on:
   workflow_dispatch:
@@ -6,19 +12,14 @@ on:
       version:
         description: Version to embed in the manual build (MAJOR.MINOR.PATCH)
         required: true
-        default: "1.0.0"
+        default: "0.0.0"
         type: string
   push:
-    tags:
-      - "v*"
+    tags: ['v*']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
-
-env:
-  BUNDLE_ID_PREFIX: com.brohd
-  MACH_SERVICE_NAME: com.brohd.FinderActions.runner
 
 jobs:
   build:
@@ -31,8 +32,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
 
     steps:
-      - name: Check out source
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -43,14 +43,13 @@ jobs:
           MANUAL_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          semantic_version_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
-
+          semver='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
           if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-            if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            version="${GITHUB_REF_NAME#v}"
+            if [[ "$GITHUB_REF_NAME" != v* || ! "$version" =~ $semver ]]; then
               echo "Release tags must use vMAJOR.MINOR.PATCH without leading zeroes." >&2
               exit 1
             fi
-            version="${GITHUB_REF_NAME#v}"
             release_commit="$(git rev-parse "${GITHUB_REF_NAME}^{commit}")"
             git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
             if ! git merge-base --is-ancestor "$release_commit" refs/remotes/origin/main; then
@@ -59,54 +58,43 @@ jobs:
             fi
           else
             version="$MANUAL_VERSION"
-            if [[ ! "$version" =~ $semantic_version_pattern ]]; then
+            if [[ ! "$version" =~ $semver ]]; then
               echo "Manual versions must use MAJOR.MINOR.PATCH without leading zeroes." >&2
               exit 1
             fi
           fi
-
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
-          echo "BUILD_NUMBER=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
-          echo "Building Finder Actions $version ($GITHUB_RUN_NUMBER)"
 
       - name: Show build environment
         run: |
-          set -euo pipefail
           sw_vers
           xcodebuild -version
-          swift --version
 
       - name: Run tests
         run: |
           set -euo pipefail
-          xcodebuild \
-            -project FinderActions.xcodeproj \
-            -scheme FinderActions \
-            -configuration Debug \
-            -destination 'platform=macOS' \
-            -derivedDataPath "$RUNNER_TEMP/TestDerivedData" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            DEVELOPMENT_TEAM= \
-            "BUNDLE_ID_PREFIX=$BUNDLE_ID_PREFIX" \
-            "MACH_SERVICE_NAME=$MACH_SERVICE_NAME" \
-            ONLY_ACTIVE_ARCH=YES \
-            ARCHS=arm64 \
-            test
+          if [[ -x scripts/test.sh ]]; then
+            scripts/test.sh
+          else
+            echo "no scripts/test.sh; skipping"
+          fi
 
       - name: Build, sign, verify and archive
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: scripts/package.sh "$VERSION" "$GITHUB_RUN_NUMBER" dist
+
+      - name: Verify checksums
         run: |
           set -euo pipefail
-          scripts/package.sh "$RELEASE_VERSION" "$BUILD_NUMBER" "$RUNNER_TEMP/Artifacts"
+          cd dist
+          ls -l
+          for sum in *.sha256; do shasum -a 256 -c "$sum"; done
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v4
         with:
-          name: finder-actions-release
-          path: |
-            ${{ runner.temp }}/Artifacts/Finder-Actions.zip
-            ${{ runner.temp }}/Artifacts/Finder-Actions.zip.sha256
+          name: release-assets
+          path: dist/*
           if-no-files-found: error
           retention-days: 7
 
@@ -120,31 +108,45 @@ jobs:
       contents: write
 
     steps:
-      - name: Download verified build artifact
-        uses: actions/download-artifact@v8
+      - uses: actions/checkout@v4
         with:
-          name: finder-actions-release
-          path: release-assets
+          # Release notes need tags and full history.
+          fetch-depth: 0
 
-      - name: Verify release checksum
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: dist
+
+      - name: Verify checksums
         run: |
           set -euo pipefail
-          cd release-assets
-          sha256sum -c Finder-Actions.zip.sha256
+          cd dist
+          for sum in *.sha256; do sha256sum -c "$sum"; done
 
-      - name: Publish release
+      - name: Generate release notes
+        uses: orhun/git-cliff-action@v4
+        id: notes
+        with:
+          version: v2.14.2
+          config: cliff.toml
+          args: --current --strip header
         env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+          OUTPUT: ${{ runner.temp }}/release-notes.md
+
+      - name: Append repo release note
+        env:
+          NOTES: ${{ steps.notes.outputs.changelog }}
         run: |
           set -euo pipefail
-          release_note='This build is ad-hoc signed and is not notarized. On first launch, approve it under System Settings > Privacy & Security, then enable the per-user background runner in the dashboard and enable the Finder extension. Protected locations may require Full Disk Access for the embedded Finder extension, and macOS may request privacy permissions again after an update.'
-          gh release create "$GITHUB_REF_NAME" \
-            'release-assets/Finder-Actions.zip#Finder Actions for macOS (universal, ad-hoc signed)' \
-            'release-assets/Finder-Actions.zip.sha256#SHA-256 checksum' \
-            --repo "$GITHUB_REPOSITORY" \
-            --verify-tag \
-            --generate-notes \
-            --latest \
-            --title "Finder Actions v$RELEASE_VERSION" \
-            --notes "$release_note"
+          if [[ -f .github/release-notes.md ]]; then
+            printf '\n' >> "$NOTES"
+            cat .github/release-notes.md >> "$NOTES"
+          fi
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ github.ref_name }}
+          files: dist/*
+          body_path: ${{ steps.notes.outputs.changelog }}
+          make_latest: true
