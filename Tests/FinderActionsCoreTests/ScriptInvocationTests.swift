@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 @testable import FinderActionsCore
 
-/// Guards the execution contract documented in the README and implemented by
+/// Guards the execution contract documented in docs/execution.md and implemented by
 /// `ScriptExecutor`: `/bin/zsh -c <Exec> <action-id> <path>...`, so selected
 /// paths reach the script as `"$@"` without ever being spliced into the source.
 final class ScriptInvocationTests: XCTestCase {
